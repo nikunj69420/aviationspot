@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
-import { createRadarStage, createScope } from './radar.js?v=4';
+import { createRadarStage, createScope } from './radar.js?v=6';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -502,16 +502,16 @@ function updateCockpit(dt) {
 
 function updateEngine(dt) {
   const p = stickyProgress(engineSec);
-  // swing from the closed nacelle (front-left), past the intake, round to the open cutaway side
-  const a = lerp(-0.85, 1.5, smooth(p));
+  // a short swing on the open cutaway side: slanted from the front, settling into the side view
+  const a = lerp(0.72, 1.5, smooth(p));
   const wide = engine.camera.aspect >= 1;
   const R = wide ? 14 : 18;
   const cam = engine.camera;
   cam.position.set(-Math.cos(a) * R, lerp(2.4, 0.8, p) - pointer.y * 0.6, Math.sin(a) * R);
   // aim off-centre so the engine sits lower-right, clear of the copy
   const fx = -cam.position.x / R, fz = -cam.position.z / R;
-  const off = wide ? 1.7 : 0;
-  cam.lookAt(fz * off, wide ? 1.1 : 2.2, -fx * off);
+  const off = wide ? 2.5 : 0;
+  cam.lookAt(fz * off, wide ? 0.5 : 2.2, -fx * off);
   if (engineMixer && !reduceMotion) engineMixer.update(dt * (0.6 + p));
 
   for (let i = 0; i < FLOW; i++) {
@@ -523,7 +523,7 @@ function updateEngine(dt) {
   // HTML labels pinned to points on the core; they appear once the cutaway side is in view
   labels.forEach((el, i) => {
     partAnchors[i].getWorldPosition(tmp).project(cam);
-    const vis = range(p, 0.5 + i * 0.04, 0.6 + i * 0.04) * (1 - range(p, 0.95, 1));
+    const vis = range(p, 0.3 + i * 0.05, 0.42 + i * 0.05) * (1 - range(p, 0.95, 1));
     el.style.opacity = tmp.z < 1 ? vis : 0;
     const below = i % 2 === 1;
     el.classList.toggle('below', below);
@@ -533,16 +533,20 @@ function updateEngine(dt) {
 }
 
 const radarSec = document.getElementById('radar');
-const scope = createScope(document.getElementById('scope'));
-const rtLines = [...document.querySelectorAll('.rt__line')];
-function updateRadar(dt, time) {
+const radarCopy = radarSec.querySelector('.radar__copy');
+const scopeEl = document.getElementById('scope');
+const scope = createScope(scopeEl);
+const RADAR_K = KEYS.findIndex((key) => key.stage === 'radar');
+function updateRadar(dt, time, k) {
   const p = stickyProgress(radarSec);
-  radar.update({ p, dt, time, pointer, reduceMotion });
-  // the radio exchange plays out line by line; ATC's "radar contact" tags our blip on the scope
-  let active = -1;
-  rtLines.forEach((el, i) => { const on = p >= +el.dataset.at; el.classList.toggle('is-on', on); if (on) active = i; });
-  rtLines.forEach((el, i) => el.classList.toggle('is-active', i === active));
-  scope.draw(radar.sweepAngle(), time, active >= 1);
+  // 0 → 1 as the radar arrives and back to 0 as it leaves (the stage swaps in at RADAR_K ± 0.5)
+  const presence = Math.min(range(k, RADAR_K - 0.5, RADAR_K - 0.12), 1 - range(k, RADAR_K + 0.12, RADAR_K + 0.5));
+  radar.update({ p, dt, time, pointer, reduceMotion, presence });
+  radarCopy.style.opacity = presence;
+  radarCopy.style.transform = `translateY(${(1 - presence) * 40}px)`;
+  scopeEl.style.opacity = presence;
+  scopeEl.style.transform = `scale(${0.7 + 0.3 * presence}) rotate(${(1 - presence) * -50}deg)`;
+  scope.draw(radar.sweepAngle(), time, presence);
 }
 
 function frame() {
@@ -567,7 +571,7 @@ function frame() {
 
   updateSky(dt, time, target, ease); // always runs so the A320 keeps its place
   if (stage === 'cockpit') updateCockpit(dt);
-  if (stage === 'radar') updateRadar(dt, time);
+  if (stage === 'radar') updateRadar(dt, time, target.i + target.t);
   if (stage === 'engine') updateEngine(dt);
   else labels.forEach((el) => (el.style.opacity = 0));
 
@@ -601,12 +605,12 @@ function splitWords(el) {
 const heroWords = splitWords(document.getElementById('heroTag'));
 gsap.set(heroWords, { yPercent: 115 });
 gsap.set('.hero .eyebrow, .hero__brand, .hero .lede, .hero__cta', { y: 30, opacity: 0 });
-gsap.set('#heroBack', { opacity: 0, scale: 0.9 });
+gsap.set('#heroBack span', { opacity: 0, scale: 0.9 });
 function intro() {
   const tl = gsap.timeline({ delay: 0.5 });
   tl.to(heroWords, { yPercent: 0, duration: 1.4, stagger: 0.09, ease: 'expo.out' })
     .to('.hero .eyebrow, .hero__brand, .hero .lede, .hero__cta', { y: 0, opacity: 1, duration: 1.1, stagger: 0.08, ease: 'power3.out' }, 0.3)
-    .to('#heroBack', { opacity: 1, scale: 1, duration: 2.2, ease: 'expo.out' }, 0.2);
+    .to('#heroBack span', { opacity: 1, scale: 1, duration: 2.2, ease: 'expo.out' }, 0.2);
 }
 
 // hero photo + giant 360° dissolve as we leave the ground

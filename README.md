@@ -15,7 +15,7 @@ Then open http://localhost:5173. (`tools/serve.py` is a plain static server that
 ## What's where
 
 - `index.html`, `style.css`, `main.js`: the page, styles and all scroll/3D logic
-- `radar.js`: the "Talk to the tower" radar scene (splits and paints the radar model) and its 2D scope
+- `radar.js`: the radar scene (splits and paints the radar model, rise-in/sink-out transitions) and its 2D scope
 - `assests/radar/`: radar model (untextured; coloured in code)
 - `assests/a320/`: Airbus A320 with the AviationSpot360 livery (`scene_as360.gltf`)
 - `assests/c182/`: Cessna 182 Skylane (textures downscaled for the web)

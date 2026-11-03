@@ -1,4 +1,4 @@
-// "Talk to the tower": an airport surveillance radar on its mast at dusk, plus a synced 2D scope.
+// "Radar contact": an airport surveillance radar on its mast at dusk, plus a synced 2D scope.
 // The source model ("Radar Turret") is one untextured mesh; we split off the rotating head and
 // paint it in vertex colours modelled on real ASR/SSR installations.
 import * as THREE from 'three';
@@ -6,6 +6,7 @@ import * as THREE from 'three';
 const CUT_HEAD = -3.6;  // world-Y: everything above turns (pedestal, yoke, array)
 const AXIS = new THREE.Vector2(0.07, 0.05); // pedestal axis in XZ
 const SPIN = 0.9; // rad/s, a little under a real ASR's 12-15 rpm so it reads on screen
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
 const C = {
   concrete: new THREE.Color('#8b9098'), concreteTop: new THREE.Color('#a3a8af'),
@@ -172,6 +173,7 @@ export function createRadarStage({ envMap, loader, isSmall }) {
   }
 
   const beam = makeBeam();
+  const beamMat = beam.children[0].material;
   head.add(beam);
 
   // a few early stars
@@ -203,11 +205,18 @@ export function createRadarStage({ envMap, loader, isSmall }) {
   });
 
   let sweep = 0;
-  function update({ p, dt, time, pointer, reduceMotion }) {
-    sweep += dt * (reduceMotion ? 0.25 : SPIN);
+  function update({ p, dt, time, pointer, reduceMotion, presence = 1 }) {
+    // arrive: rise up the mast with a slight turn, spin up, then lights and beam come on;
+    // leave: the same in reverse
+    const e = 1 - Math.pow(1 - presence, 3);
+    radar.position.y = -44 * (1 - e);
+    radar.rotation.y = (1 - e) * 0.9;
+    sweep += dt * (reduceMotion ? 0.25 : SPIN) * (0.12 + 0.88 * e);
     head.rotation.y = -sweep; // clockwise seen from above, like the scope
+    const power = clamp01((presence - 0.55) / 0.45);
+    beamMat.uniforms.uStrength.value = 0.09 * power;
     const on = Math.sin(time * Math.PI * 1.2) > 0.2 ? 1 : 0.15; // ~0.6 s blink
-    for (const l of lights) l.material.opacity = on;
+    for (const l of lights) l.material.opacity = on * power;
 
     // orbit: low and looking up at the mast, then round and up level with the array
     const a = 0.5 + p * 1.9;
@@ -221,10 +230,7 @@ export function createRadarStage({ envMap, loader, isSmall }) {
 }
 
 /* ---------- 2D scope (PPI), sweep synced to the antenna ---------- */
-const TARGETS = [
-  { r: 0.62, a: 0.9, label: 'IGO512' }, { r: 0.4, a: 2.4, label: 'AKJ119' },
-  { r: 0.82, a: 3.6, label: 'VTI804' }, { r: 0.3, a: 4.7, label: '' }, { r: 0.7, a: 5.6, label: 'AIC101' },
-];
+const TARGETS = [{ r: 0.62, a: 0.9 }, { r: 0.4, a: 2.4 }, { r: 0.82, a: 3.6 }, { r: 0.3, a: 4.7 }, { r: 0.7, a: 5.6 }];
 export function createScope(canvas) {
   const g = canvas.getContext('2d');
   let size = 0;
@@ -235,10 +241,12 @@ export function createScope(canvas) {
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   const TAU = Math.PI * 2;
-  function draw(sweep, time, contact) {
+  function draw(sweep, time, presence = 1) {
     if (canvas.clientWidth !== size) fit();
     const s = size, c = s / 2, R = c - 6;
     g.clearRect(0, 0, s, s);
+    if (presence <= 0) return;
+    const contact = presence > 0.85; // our blip tags up once the radar is fully on
     const bg = g.createRadialGradient(c, c, 0, c, c, R);
     bg.addColorStop(0, '#062418');
     bg.addColorStop(1, '#020c08');
@@ -247,7 +255,8 @@ export function createScope(canvas) {
 
     g.strokeStyle = 'rgba(110, 255, 185, .18)';
     g.lineWidth = 1;
-    for (const k of [0.25, 0.5, 0.75, 1]) { g.beginPath(); g.arc(c, c, R * k, 0, TAU); g.stroke(); }
+    // range rings power on from the centre outwards
+    for (const k of [0.25, 0.5, 0.75, 1]) { if (presence < k * 0.8) continue; g.beginPath(); g.arc(c, c, R * k, 0, TAU); g.stroke(); }
     g.beginPath(); g.moveTo(c - R, c); g.lineTo(c + R, c); g.moveTo(c, c - R); g.lineTo(c, c + R); g.stroke();
     for (let d = 0; d < 360; d += 10) {
       const a = (d * Math.PI) / 180 - Math.PI / 2, len = d % 30 ? 4 : 8;
@@ -272,6 +281,7 @@ export function createScope(canvas) {
     // blips glow when the sweep passes, then fade until the next pass
     const ours = { r: 0.5 + Math.sin(time * 0.05) * 0.08, a: 1.75, label: 'AS360', own: true };
     g.font = `600 ${Math.max(9, s * 0.036)}px "JetBrains Mono", monospace`;
+    g.globalAlpha = clamp01((presence - 0.5) / 0.5);
     for (const tg of [...TARGETS, ours]) {
       const since = (((sweep - tg.a) % TAU) + TAU) % TAU; // radians since last painted
       const lit = Math.exp(-since * 0.9);
@@ -287,6 +297,7 @@ export function createScope(canvas) {
       g.fillText(tg.label, x + 14, y - 14);
       if (tg.own) g.fillText(isContact ? '350 ↑' : '060 ↑', x + 14, y - 14 + s * 0.045);
     }
+    g.globalAlpha = 1;
   }
   return { draw };
 }

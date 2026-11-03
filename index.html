@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,600..800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=11" />
+  <link rel="stylesheet" href="style.css?v=13" />
   <script type="importmap">
     { "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
@@ -30,7 +30,7 @@
   <!-- Fixed backdrop layers (behind the WebGL canvas) -->
   <div class="sky" id="sky" aria-hidden="true"></div>
   <div class="hero-photo" id="heroPhoto" aria-hidden="true"><img src="bg.png" alt="" /></div>
-  <div class="hero-back" id="heroBack" aria-hidden="true">360°</div>
+  <div class="hero-back" id="heroBack" aria-hidden="true"><span>360°</span></div>
   <canvas class="webgl" id="webgl" aria-hidden="true"></canvas>
   <div class="fader" id="fader" aria-hidden="true"></div>
 
@@ -130,14 +130,8 @@
       <div class="sticky">
         <div class="radar__copy">
           <p class="eyebrow">05 · Radar contact</p>
-          <h2>Talk to<br/><em>the tower.</em></h2>
-          <p class="radar__sub">RTR Part II practical practice: call-and-response with real phraseology, reviewed by qualified subject-matter experts, plus live mock sessions with a mentor.</p>
-          <div class="rt" aria-label="Sample radio exchange">
-            <div class="rt__line" data-at="0.12"><span class="rt__who">Pilot</span><p>Mumbai Approach, AviationSpot 360, passing four thousand, climbing six thousand.</p></div>
-            <div class="rt__line rt__line--atc" data-at="0.38"><span class="rt__who">ATC</span><p>AviationSpot 360, Mumbai Approach, radar contact. Climb flight level 350.</p></div>
-            <div class="rt__line" data-at="0.62"><span class="rt__who">Pilot</span><p>Climb flight level 350, AviationSpot 360.</p></div>
-          </div>
-          <p class="rt__note">Illustrative practice scenario · RTR Part II module, Phase 4</p>
+          <h2>Always in<br/><em>radar contact.</em></h2>
+          <p class="radar__sub">Mentors, study groups and authority updates that keep you on course, from your first ground-school exam to the airline cockpit.</p>
         </div>
         <canvas class="scope" id="scope" aria-hidden="true"></canvas>
       </div>
@@ -235,6 +229,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
   <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script type="module" src="main.js?v=15"></script>
+  <script type="module" src="main.js?v=18"></script>
 </body>
 </html>
