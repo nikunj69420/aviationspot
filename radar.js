@@ -219,13 +219,15 @@ export function createRadarStage({ envMap, loader, isSmall }) {
     const on = Math.sin(time * Math.PI * 1.2) > 0.2 ? 1 : 0.15; // ~0.6 s blink
     for (const l of lights) l.material.opacity = on * power;
 
-    // orbit: low and looking up at the mast, then round and up level with the array
+    // orbit round the radar from slightly above, looking down at it ~17°, steepening to ~19°
     const a = 0.5 + p * 1.9;
     const wide = camera.aspect >= 1;
     const R = wide ? 50 : 70;
-    camera.position.set(Math.cos(a) * R + pointer.x * 1.5, -12 + p * 14 - pointer.y * 1.5, Math.sin(a) * R);
-    const right = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a)); // screen-left of the radar
-    camera.lookAt(right.multiplyScalar(wide ? 7 : 0).add(new THREE.Vector3(0, wide ? 3 : 13, 0))); // portrait: radar sits low, under the copy
+    const aimY = wide ? 3 : 13; // portrait: radar sits low, under the copy
+    const pitch = THREE.MathUtils.degToRad(17 + p * 2);
+    camera.position.set(Math.cos(a) * R + pointer.x * 1.5, aimY + Math.tan(pitch) * R - pointer.y * 1.5, Math.sin(a) * R);
+    const left = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a)); // screen-left of the radar
+    camera.lookAt(left.multiplyScalar(wide ? 7 : 0).add(new THREE.Vector3(0, aimY, 0)));
   }
   return { scene, camera, update, sweepAngle: () => sweep };
 }
