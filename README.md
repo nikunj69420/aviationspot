@@ -7,10 +7,10 @@ Phase 1 brand-reveal and early-access site for AviationSpot360, a learning and c
 The 3D models have to be served over HTTP (opening `index.html` directly won't load them):
 
 ```bash
-python -m http.server 5173
+python tools/serve.py
 ```
 
-Then open http://localhost:5173.
+Then open http://localhost:5173. (`tools/serve.py` is a plain static server that turns off browser caching, so edits show up on reload.)
 
 ## What's where
 

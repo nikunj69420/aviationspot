@@ -643,26 +643,57 @@ gsap.ticker.add((_, dt) => {
   mqSkew(gsap.utils.clamp(-12, 12, -v * 0.6));
 });
 
-// Exams: authority switcher
+// Exams: authority switcher (each authority carries its flag colours into the UI)
 const EXAMS = [
-  { code: 'VABB · DGCA', name: 'India', text: 'CPL and ATPL subject-wise practice in a DGCA-oriented interface: timer, question palette, mark-for-review and negative marking where it applies. B737 and A320 type practice too.' },
-  { code: 'FAOR · SACAA', name: 'South Africa', text: 'A dedicated preparation area for candidates on the South African licensing pathway, with its own layout, settings and in-country FTO discovery.' },
-  { code: 'KJFK · FAA', name: 'United States', text: 'A separate space for students studying under the US system, with knowledge-test style practice, results and explanations.' },
+  {
+    code: 'DGCA · VABB', name: 'India', glow: 'rgba(255, 153, 51, .35)',
+    band: 'linear-gradient(90deg, #FF9933 0 33%, #ffffff 33% 66%, #138808 66%)',
+    text: 'CPL and ATPL subject-wise practice in a DGCA-oriented interface: timer, question palette, mark-for-review and negative marking where it applies.',
+    chips: ['CPL', 'ATPL', 'A320 / B737 type', 'RTR Part II'],
+  },
+  {
+    code: 'SACAA · FAOR', name: 'South Africa', glow: 'rgba(0, 119, 73, .4)',
+    band: 'linear-gradient(90deg, #DE3831 0 25%, #FFB612 25% 50%, #007749 50% 75%, #002395 75%)',
+    text: 'A dedicated preparation area for candidates on the South African licensing pathway, with its own layout, settings and in-country FTO discovery.',
+    chips: ['CPL', 'ATPL', 'FTO directory'],
+  },
+  {
+    code: 'FAA · KJFK', name: 'United States', glow: 'rgba(60, 59, 110, .6)',
+    band: 'linear-gradient(90deg, #B22234 0 33%, #ffffff 33% 66%, #3C3B6E 66%)',
+    text: 'A separate space for students studying under the US system, with knowledge-test style practice, results and explanations.',
+    chips: ['Private', 'Commercial', 'ATP knowledge'],
+  },
 ];
 const panelEl = document.getElementById('examPanel');
-const tabs = document.querySelectorAll('.tabs button');
+const tabs = document.querySelectorAll('.auth__item');
+tabs.forEach((t, i) => t.style.setProperty('--band', EXAMS[i].band));
+const ARROW = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11m-4-4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function showExam(i, animate = true) {
   tabs.forEach((t, j) => t.setAttribute('aria-selected', String(i === j)));
   const e = EXAMS[i];
-  const render = () => { panelEl.innerHTML = `<div class="exam__code">${e.code}</div><h3>${e.name}</h3><p>${e.text}</p>`; };
+  const flag = tabs[i].querySelector('.auth__flag').outerHTML;
+  const render = () => {
+    panelEl.style.setProperty('--band', e.band);
+    panelEl.style.setProperty('--glow', e.glow);
+    panelEl.innerHTML = `<div class="exam__code">${e.code}</div>`
+      + `<div class="exam__head">${flag}<h3>${e.name}</h3></div><p>${e.text}</p>`
+      + `<ul class="exam__chips">${e.chips.map((c) => `<li>${c}</li>`).join('')}</ul>`
+      + `<div class="exam__foot"><span class="exam__status"><i></i>Opens in Phase 2</span>`
+      + `<a class="exam__cta" href="#board">Get notified ${ARROW}</a></div>`;
+    panelEl.querySelector('.exam__cta').addEventListener('click', (ev) => {
+      ev.preventDefault();
+      lenis ? lenis.scrollTo('#board', { duration: 2.2 }) : document.getElementById('board').scrollIntoView();
+    });
+  };
   if (!animate) return render();
   gsap.timeline()
-    .to(panelEl, { opacity: 0, y: -14, rotateX: 12, duration: 0.25, ease: 'power2.in', onComplete: render })
-    .fromTo(panelEl, { opacity: 0, y: 24, rotateX: -12 }, { opacity: 1, y: 0, rotateX: 0, duration: 0.7, ease: 'expo.out' });
+    .to(panelEl.children, { opacity: 0, y: -10, duration: 0.2, stagger: 0.02, ease: 'power2.in', onComplete: render })
+    .add(() => gsap.from(panelEl.children, { opacity: 0, y: 18, duration: 0.6, stagger: 0.05, ease: 'expo.out' }));
 }
 tabs.forEach((t) => t.addEventListener('click', () => showExam(+t.dataset.i)));
 showExam(0, false);
-gsap.from(panelEl, { y: 80, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: panelEl, start: 'top 88%' } });
+gsap.from('.auth__item, .auth__more', { y: 30, opacity: 0, duration: 1, stagger: 0.08, ease: 'expo.out', scrollTrigger: { trigger: '.auth', start: 'top 85%' } });
+gsap.from(panelEl, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: '.auth', start: 'top 85%' } });
 
 // Departure board with split-flap characters
 const DEPARTURES = [
@@ -715,7 +746,24 @@ const form = document.getElementById('passForm');
 tiltPass(form);
 tiltPass(document.getElementById('printedPass'));
 gsap.from(form, { y: 140, rotateX: 40, opacity: 0, duration: 1.6, ease: 'expo.out', scrollTrigger: { trigger: form, start: 'top 90%' } });
-gsap.to('.pass__plane', { keyframes: [{ left: '8%', top: '22px', rotate: -25 }, { left: '50%', top: '-6px', rotate: 0 }, { left: '92%', top: '22px', rotate: 25 }], duration: 4, repeat: -1, ease: 'none' });
+// The little plane flies the dotted arc: same quadratic curve as the SVG path (M4 36 Q100 -10 196 36
+// in a 200×40 box stretched to the arc's size), nose turned along the tangent.
+const arcEl = document.querySelector('.pass__arc');
+const passPlane = document.querySelector('.pass__plane');
+const flight = { t: 0 };
+gsap.to(flight, {
+  t: 1, duration: 4.5, repeat: -1, repeatDelay: 0.5, ease: 'sine.inOut',
+  onUpdate: () => {
+    const { t } = flight, u = 1 - t;
+    const sx = arcEl.clientWidth / 200, sy = arcEl.clientHeight / 40;
+    const x = (u * u * 4 + 2 * u * t * 100 + t * t * 196) * sx;
+    const y = (u * u * 36 + 2 * u * t * -10 + t * t * 36) * sy;
+    const dx = (2 * u * (100 - 4) + 2 * t * (196 - 100)) * sx;
+    const dy = (2 * u * (-10 - 36) + 2 * t * (36 + 10)) * sy;
+    passPlane.style.transform = `translate(${x - 12}px, ${y - 12}px) rotate(${Math.atan2(dy, dx)}rad)`;
+    passPlane.style.opacity = Math.min(1, t * 8, (1 - t) * 8);
+  },
+});
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
