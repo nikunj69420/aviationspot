@@ -274,6 +274,18 @@ loader.load('assests/c182/scene.gltf', (gltf) => {
     m.add(propeller);
     propeller.attach(prop);
   }
+  // The G1000 PFD and MFD ship as alpha-blended glass, flush with the bezel and with tinted cabin
+  // glass drawn over them, so they come out black. Show them as pure emitted light (the display
+  // image), drawn after the glass, so the moving map and flight display read.
+  const screens = [];
+  m.traverse((o) => { if (o.isMesh && ['material', 'material_18'].includes(o.material.name)) screens.push(o); });
+  for (const o of screens) {
+    const display = o.material.emissiveMap;
+    display.colorSpace = THREE.SRGBColorSpace;
+    o.material = new THREE.MeshBasicMaterial({ map: display, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -4, transparent: true, depthWrite: true });
+    o.material.color.setScalar(0.92); // a touch under full white so it doesn't glare
+    o.renderOrder = 10;
+  }
   cessna.add(m);
 });
 
