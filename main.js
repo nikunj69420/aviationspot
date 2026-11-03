@@ -245,7 +245,7 @@ jet.visible = false;
 sky.scene.add(jet);
 
 /* =========================================================
-   Stage 2: COCKPIT — Cessna 182 Skylane, outside then into the left seat
+   Stage 2: COCKPIT — inside the Cessna 182 Skylane
    ========================================================= */
 // kept in real metres: nose points -Z, panel ~1 m behind the prop, pilot's eye ≈ (-0.2, 0.56, -0.1)
 const cockpit = { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(42, 1, 0.02, 200) };
@@ -277,16 +277,15 @@ loader.load('assests/c182/scene.gltf', (gltf) => {
   cessna.add(m);
 });
 
-// camera beats: [progress, eye, target]
+// camera beats, all inside the cabin: [progress, eye, target]
 const CP_PATH = [
-  [0.0, [-8.6, 1.6, -7.4], [-1.9, 1.2, 0]],    // outside, front-left three-quarter
-  [0.2, [-7.8, 1.3, -6.0], [-1.7, 1.1, 0]],
-  [0.32, [-2.2, 0.7, -0.2], [-0.2, 0.42, -0.8]], // up to the pilot's door
-  [0.42, [-0.2, 0.56, -0.08], [-0.02, 0.3, -1.1]], // in the left seat, eyes on the panel
+  [0.0, [-0.17, 0.42, -0.48], [-0.17, 0.37, -1.05]], // nose-to-glass with the G1000 PFD
+  [0.18, [-0.17, 0.43, -0.42], [-0.15, 0.37, -1.05]],
+  [0.42, [-0.2, 0.56, -0.08], [-0.02, 0.3, -1.1]],    // back into the left seat: the whole panel
   [0.6, [-0.2, 0.56, -0.1], [0.02, 0.31, -1.1]],
-  [0.7, [-0.2, 0.58, -0.12], [-0.2, 0.7, -3.0]], // look up and out through the windshield
+  [0.7, [-0.2, 0.58, -0.12], [-0.2, 0.7, -3.0]],     // look up and out through the windshield
   [0.8, [-0.2, 0.58, -0.14], [-0.2, 0.74, -3.0]],
-  [1.0, [-0.2, 3.2, -4.0], [-0.2, 4.5, -14]],   // lift out into the sky
+  [1.0, [-0.2, 0.75, -4.5], [-0.2, 1.0, -14]],      // fly out ahead of the aircraft
 ];
 const cpEye = new THREE.Vector3(), cpTarget = new THREE.Vector3();
 function cockpitPose(p) {
@@ -464,17 +463,14 @@ function updateSky(dt, time, target, ease) {
   sky.scene.fog.color.copy(target.sky[1]);
 }
 
-function updateCockpit(dt, time) {
+function updateCockpit(dt) {
   const p = stickyProgress(cockpitSec);
   if (propeller && !reduceMotion) propeller.rotation.z += dt * 28;
-  cessna.position.y = reduceMotion ? 0 : Math.sin(time * 0.8) * 0.04; // gentle float in the air
-  cessna.rotation.z = reduceMotion ? 0 : Math.sin(time * 0.5) * 0.015;
 
   cockpitPose(p);
   const cam = cockpit.camera;
-  // pointer parallax: wide outside, a small head turn once seated
-  const look = 1 - range(p, 0.3, 0.42) * 0.85;
-  cam.position.copy(cpEye).add(tmp.set(pointer.x * 0.8 * look, -pointer.y * 0.4 * look, 0));
+  // pointer parallax: a small head turn from the seat
+  cam.position.copy(cpEye).add(tmp.set(pointer.x * 0.12, -pointer.y * 0.06, 0));
   cam.lookAt(cpTarget.x + pointer.x * 0.3, cpTarget.y - pointer.y * 0.2, cpTarget.z);
   // portrait screens: widen the lens so the panel still fits from the seat
   const fov = cam.aspect < 1 ? 62 : 42;
@@ -538,7 +534,7 @@ function frame() {
   altFill.style.height = `${(cur.alt / 35000) * 100}%`;
 
   updateSky(dt, time, target, ease); // always runs so the A320 keeps its place
-  if (stage === 'cockpit') updateCockpit(dt, time);
+  if (stage === 'cockpit') updateCockpit(dt);
   if (stage === 'engine') updateEngine(dt);
   else labels.forEach((el) => (el.style.opacity = 0));
 

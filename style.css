@@ -24,7 +24,7 @@ body { background: var(--navy); color: var(--ink); font: 500 17px/1.65 var(--fon
 a { color: inherit; }
 em { font-style: normal; color: var(--amber); }
 /* Display type: bold, matte and grainy rather than glossy */
-.tex, h2, .hero__tag .w > span, .lines, .footer__big, .exam h3, .marquee__track span:nth-of-type(even) {
+.tex, h2, .hero__tag .w > span, .line, .footer__big, .exam h3, .marquee__track span:nth-of-type(even) {
   font-family: var(--display); color: transparent;
   background: var(--grain), var(--matte); -webkit-background-clip: text; background-clip: text;
 }
@@ -92,8 +92,8 @@ h1 { margin-bottom: 24px; }
 .cockpit .sticky::before { content: ""; position: absolute; inset: 0 0 auto; height: 62vh; z-index: -1; pointer-events: none; background: linear-gradient(rgba(5, 11, 24, .72), rgba(5, 11, 24, .35) 60%, transparent); }
 .cockpit .sticky { position: sticky; isolation: isolate; max-width: none; }
 .cockpit .sticky > * { width: 100%; max-width: 1180px; margin-inline: auto; }
-.lines { position: relative; height: 3.4em; font-weight: 800; font-size: clamp(36px, 5.6vw, 80px); line-height: 1; letter-spacing: -.04em; font-variation-settings: "wdth" 92; filter: drop-shadow(0 6px 30px rgba(4, 12, 30, .6)); }
-.line { background: inherit; -webkit-background-clip: text; background-clip: text; }
+.lines { position: relative; height: 3.4em; font-family: var(--display); font-weight: 800; font-size: clamp(36px, 5.6vw, 80px); line-height: 1; letter-spacing: -.04em; font-variation-settings: "wdth" 92; }
+.line { filter: drop-shadow(0 6px 30px rgba(4, 12, 30, .6)); }
 .line { position: absolute; top: 0; left: 0; opacity: 0; }
 
 .engine .sticky { justify-content: flex-start; padding-top: 14vh; }
