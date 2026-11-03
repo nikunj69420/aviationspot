@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
+import { createRadarStage, createScope } from './radar.js?v=4';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -40,6 +41,7 @@ const KEYS = [
   { stage: 'sky', p: [1.2, 1.8, -10], r: [0.25, 1.1, 0.12], s: 1, cy: -3.2, alt: 5000, sky: ['#2a63b4', '#6aa3dc', '#d6e8f6'] },
   { stage: 'engine', p: [3.8, 0.4, -2], r: [-0.3, -0.5, 0.06], s: 1, cy: -4, alt: 8000, sky: ['#040a17', '#0a1830', '#13284d'] },
   { stage: 'sky', p: [3.5, 0.2, -1.5], r: [-0.08, -0.32, 0.04], s: 1.1, cy: -4.5, alt: 10000, sky: ['#12397a', '#3f7ccb', '#a9cdee'] },
+  { stage: 'radar', p: [9, 6, -14], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -7, alt: 14000, sky: ['#0a1230', '#2b2c55', '#b8684a'] },
   { stage: 'sky', p: [5.2, 3.9, -13], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -6.5, alt: 18000, sky: ['#0a2456', '#23559e', '#6f9fd6'] },
   { stage: 'sky', pm: [1.5, 7, -6], p: [3.4, 2.3, -4], r: [0.12, -0.35, 0.05], s: 1.05, cy: -8, alt: 35000, sky: ['#0a1838', '#6b4a7a', '#f3a35a'] },
   { stage: 'sky', p: [10, 5.5, -5], r: [0.1, -0.2, 0.12], s: 1, cy: -8, alt: 35000, sky: ['#071226', '#3a3566', '#d98a4f'] },
@@ -310,42 +312,48 @@ function cockpitPose(p) {
 }
 
 /* =========================================================
-   Stage 3: ENGINE — exploded turbofan with airflow
+   Stage 3: ENGINE — airliner nacelle that opens into a cutaway
    ========================================================= */
+// Source model: axis along X, intake at -X, exhaust at +X; the +Z side is cut away to show the core.
 const engine = { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(35, 1, 0.1, 100) };
 engine.scene.environment = envMap;
-engine.scene.add(new THREE.HemisphereLight(0xbcd8ff, 0x0a1020, 0.6));
-const enKey = new THREE.DirectionalLight(0xffffff, 2.4);
-enKey.position.set(4, 6, 5);
+engine.scene.add(new THREE.HemisphereLight(0xbcd8ff, 0x0a1020, 0.7));
+const enKey = new THREE.DirectionalLight(0xffffff, 2.2);
+enKey.position.set(-4, 6, 5);
 engine.scene.add(enKey);
-const rimA = new THREE.PointLight(0xf5a524, 40, 14);
-rimA.position.set(-4, 2, -3);
-const rimB = new THREE.PointLight(0x49c6ff, 40, 14);
-rimB.position.set(4, -2, -3);
+const rimA = new THREE.PointLight(0xc8a46a, 40, 16);
+rimA.position.set(4, 3, -4);
+const rimB = new THREE.PointLight(0x7fb8ff, 30, 16);
+rimB.position.set(-5, -2, 3);
 engine.scene.add(rimA, rimB);
-const turbofan = new THREE.Group(); // spins around X; intake at +X
+const turbofan = new THREE.Group();
 engine.scene.add(turbofan);
-const explodeParts = [];
-// label anchors along the engine axis (normalised units), lifted above the casing
-const PARTS = [[2.0, 0.95], [0.9, 0.95], [0.0, 0.9], [-0.95, 0.9], [-1.95, 0.75]];
+let engineMixer = null;
+// label anchors in the source model's units: [x along the axis, y, z toward the cutaway];
+// they alternate above and below the core so neighbours don't collide
+const PARTS = [[-5.6, 6.1, 1.0], [-2.8, 2.6, 1.2], [0.0, 5.3, 1.2], [2.2, 2.5, 1.2], [5.4, 4.9, 0.6]];
+const partAnchors = PARTS.map(() => new THREE.Object3D());
 
-// Airflow streaks pulled through the engine
+// Airflow streaks drawn in through the intake and out of the exhaust
 const FLOW = isSmall ? 260 : 520;
 const flowPos = new Float32Array(FLOW * 3);
 const flowSpeed = new Float32Array(FLOW);
 for (let i = 0; i < FLOW; i++) {
-  const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * 1.0;
-  flowPos.set([-4 + Math.random() * 9, Math.cos(a) * r, Math.sin(a) * r], i * 3);
+  const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * 1.1;
+  flowPos.set([-5 + Math.random() * 10, Math.cos(a) * r, Math.sin(a) * r], i * 3);
   flowSpeed[i] = 2.5 + Math.random() * 3;
 }
 const flowGeo = new THREE.BufferGeometry();
 flowGeo.setAttribute('position', new THREE.BufferAttribute(flowPos, 3));
 const flow = new THREE.Points(flowGeo, new THREE.PointsMaterial({
-  size: 0.05, color: 0x7fd8ff, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false,
+  size: 0.05, color: 0x9fd2ff, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false,
 }));
 engine.scene.add(flow);
 
-const stages = { sky, cockpit, engine };
+/* Stage 4: RADAR — surveillance radar on its mast at dusk (see radar.js) */
+const radar = createRadarStage({ envMap, loader, isSmall });
+
+const stages = { sky, cockpit, engine, radar };
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
@@ -361,24 +369,21 @@ resize();
 
 /* ---------- Lazy assets (after the page is up) ---------- */
 function loadLazy() {
-  lazyLoader.load('assests/src/turbine__turbofan_engine__jet_engine/scene.gltf', (gltf) => {
+  lazyLoader.load('assests/jet_engine/scene.gltf', (gltf) => {
     const m = gltf.scene;
-    m.updateMatrixWorld(true);
-    // explode direction: each mesh slides along the engine axis in proportion to where it sits
-    m.traverse((o) => {
-      if (!o.isMesh) return;
-      const box = new THREE.Box3().setFromObject(o);
-      const cx = box.getCenter(new THREE.Vector3()).x;
-      const p0 = o.parent.worldToLocal(new THREE.Vector3(0, 0, 0));
-      const p1 = o.parent.worldToLocal(new THREE.Vector3(1, 0, 0));
-      o.userData.base = o.position.clone();
-      o.userData.dir = p1.sub(p0).multiplyScalar(cx * 0.75);
-      o.material.envMapIntensity = 1.2;
-      explodeParts.push(o);
-    });
+    m.traverse((o) => { if (o.isMesh) o.material.envMapIntensity = 1.1; });
+    PARTS.forEach(([x, y, z], i) => { partAnchors[i].position.set(x, y, z); m.add(partAnchors[i]); });
+    // the model's own "idle" clip spins the fan and core
+    engineMixer = new THREE.AnimationMixer(m);
+    const idle = gltf.animations.find((a) => a.name === 'idle');
+    if (idle) engineMixer.clipAction(idle).play();
+    // skinned meshes report unreliable bounds before their skeleton updates, so size it from the
+    // file's measured extent: 14 units long, centred at (-0.8, 4.0, -0.59)
     const wrap = new THREE.Group();
     wrap.add(m);
-    normalise(wrap, 4.4);
+    const s = 6.6 / 14;
+    wrap.scale.setScalar(s);
+    wrap.position.set(0.8 * s, -4.0 * s, 0.59 * s);
     turbofan.add(wrap);
   });
   lazyLoader.load('assests/src/gulfstream_g650er/scene.gltf', (gltf) => {
@@ -437,7 +442,7 @@ function updateSky(dt, time, target, ease) {
 
   // contrails get thicker the higher we fly
   const k = target.i + target.t;
-  const trailVis = plane.visible ? range(k, 1.6, 2.4) * (1 - range(k, 6.4, 7)) : 0;
+  const trailVis = plane.visible ? range(k, 1.6, 2.4) * (1 - range(k, 7.4, 8)) : 0;
   fwd.set(1, 0, 0).applyQuaternion(plane.quaternion);
   for (let e = 0; e < 2; e++) {
     const idx = e * TRAIL + trailHead;
@@ -461,12 +466,12 @@ function updateSky(dt, time, target, ease) {
   trailGeo.attributes.alpha.needsUpdate = true;
   trailGeo.attributes.size.needsUpdate = true;
 
-  stars.material.opacity = range(k, 5.4, 6.2) * 0.85;
+  stars.material.opacity = range(k, 6.4, 7.2) * 0.85;
   flareLight.intensity = 1;
-  flare.visible = k < 0.9 || k > 5.5;
+  flare.visible = k < 0.9 || k > 6.5;
 
   // G650 crosses right → left behind the departure board
-  const jt = clamp01((k - 4.45) / 1.3);
+  const jt = clamp01((k - 5.45) / 1.3);
   jet.visible = jet.children.length > 0 && jt > 0 && jt < 1;
   if (jet.visible) {
     jet.position.set(lerp(13, -13, jt), lerp(-3.4, -1.6, jt) + Math.sin(time) * 0.05, -6);
@@ -497,32 +502,47 @@ function updateCockpit(dt) {
 
 function updateEngine(dt) {
   const p = stickyProgress(engineSec);
-  const ex = range(p, 0.25, 0.65);
-  // orbit from the intake (front quarter) round to the side
-  const a = lerp(0.45, 1.75, smooth(p));
+  // swing from the closed nacelle (front-left), past the intake, round to the open cutaway side
+  const a = lerp(-0.85, 1.5, smooth(p));
   const wide = engine.camera.aspect >= 1;
-  const R = (wide ? 9.2 : 12) - ex * 0.4;
-  engine.camera.position.set(Math.cos(a) * R, lerp(1.6, 0.6, p) - pointer.y * 0.6, Math.sin(a) * R);
+  const R = wide ? 14 : 18;
+  const cam = engine.camera;
+  cam.position.set(-Math.cos(a) * R, lerp(2.4, 0.8, p) - pointer.y * 0.6, Math.sin(a) * R);
   // aim off-centre so the engine sits lower-right, clear of the copy
-  tmp.set(Math.cos(a + Math.PI / 2), 0, Math.sin(a + Math.PI / 2)).multiplyScalar(wide ? 1.9 : 0);
-  engine.camera.lookAt(tmp.x, wide ? 1.0 : 1.9, tmp.z); // portrait: engine drops below the copy
-  if (!reduceMotion) turbofan.rotation.x += dt * (0.4 + p * 1.2);
-  for (const o of explodeParts) o.position.copy(o.userData.base).addScaledVector(o.userData.dir, ex);
+  const fx = -cam.position.x / R, fz = -cam.position.z / R;
+  const off = wide ? 1.7 : 0;
+  cam.lookAt(fz * off, wide ? 1.1 : 2.2, -fx * off);
+  if (engineMixer && !reduceMotion) engineMixer.update(dt * (0.6 + p));
 
   for (let i = 0; i < FLOW; i++) {
-    flowPos[i * 3] -= flowSpeed[i] * dt * (reduceMotion ? 0 : 1);
-    if (flowPos[i * 3] < -5) flowPos[i * 3] = 4;
+    flowPos[i * 3] += flowSpeed[i] * dt * (reduceMotion ? 0 : 1);
+    if (flowPos[i * 3] > 5) flowPos[i * 3] = -5;
   }
   flowGeo.attributes.position.needsUpdate = true;
 
-  // HTML labels that follow points on the engine (they spread out with the explode)
+  // HTML labels pinned to points on the core; they appear once the cutaway side is in view
   labels.forEach((el, i) => {
-    const [x, y] = PARTS[i];
-    tmp.set(x * (1 + ex * 0.35), y, 0).project(engine.camera);
-    const vis = range(p, 0.3 + i * 0.05, 0.42 + i * 0.05) * (1 - range(p, 0.92, 1));
+    partAnchors[i].getWorldPosition(tmp).project(cam);
+    const vis = range(p, 0.5 + i * 0.04, 0.6 + i * 0.04) * (1 - range(p, 0.95, 1));
     el.style.opacity = tmp.z < 1 ? vis : 0;
-    el.style.transform = `translate(${(tmp.x * 0.5 + 0.5) * innerWidth}px, ${(-tmp.y * 0.5 + 0.5) * innerHeight - 36}px) translate(-50%, -100%)`;
+    const below = i % 2 === 1;
+    el.classList.toggle('below', below);
+    const sx = Math.min(innerWidth - 70, Math.max(70, (tmp.x * 0.5 + 0.5) * innerWidth)); // keep on screen
+    el.style.transform = `translate(${sx}px, ${(-tmp.y * 0.5 + 0.5) * innerHeight + (below ? 36 : -36)}px) translate(-50%, ${below ? '0%' : '-100%'})`;
   });
+}
+
+const radarSec = document.getElementById('radar');
+const scope = createScope(document.getElementById('scope'));
+const rtLines = [...document.querySelectorAll('.rt__line')];
+function updateRadar(dt, time) {
+  const p = stickyProgress(radarSec);
+  radar.update({ p, dt, time, pointer, reduceMotion });
+  // the radio exchange plays out line by line; ATC's "radar contact" tags our blip on the scope
+  let active = -1;
+  rtLines.forEach((el, i) => { const on = p >= +el.dataset.at; el.classList.toggle('is-on', on); if (on) active = i; });
+  rtLines.forEach((el, i) => el.classList.toggle('is-active', i === active));
+  scope.draw(radar.sweepAngle(), time, active >= 1);
 }
 
 function frame() {
@@ -536,7 +556,7 @@ function frame() {
   // flash between stages: white like punching through cloud, dark into the engine
   const flash = A.stage !== B.stage ? clamp01(1 - Math.abs(t - 0.5) * 7) : 0;
   faderEl.style.opacity = flash;
-  faderEl.style.background = A.stage === 'engine' || B.stage === 'engine'
+  faderEl.style.background = [A.stage, B.stage].some((st) => st === 'engine' || st === 'radar')
     ? 'radial-gradient(circle, #13284d, #040a17)' : '';
 
   const [top, mid, bot] = target.sky;
@@ -547,6 +567,7 @@ function frame() {
 
   updateSky(dt, time, target, ease); // always runs so the A320 keeps its place
   if (stage === 'cockpit') updateCockpit(dt);
+  if (stage === 'radar') updateRadar(dt, time);
   if (stage === 'engine') updateEngine(dt);
   else labels.forEach((el) => (el.style.opacity = 0));
 

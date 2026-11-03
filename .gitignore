@@ -13,3 +13,6 @@ AviationSpot360_Project_Concept_Developer_Brief.pdf
 # local tooling
 .claude/
 __pycache__/
+assests/src/jet_engine/
+assests/src/radar/
+assests/src/turbine__turbofan_engine__jet_engine/
