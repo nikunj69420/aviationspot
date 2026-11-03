@@ -1,0 +1,11 @@
+Model Information:
+* title:	Cessna 182 Skylane
+* source:	https://sketchfab.com/3d-models/cessna-182-skylane-0bd4834504a24c1ca3c0d7eedc030ef8
+* author:	VTX (https://sketchfab.com/VTX_car)
+
+Model License:
+* license type:	CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+* requirements:	Author must be credited. No commercial use. Modified versions must have the same license.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Cessna 182 Skylane" (https://sketchfab.com/3d-models/cessna-182-skylane-0bd4834504a24c1ca3c0d7eedc030ef8) by VTX (https://sketchfab.com/VTX_car) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)

@@ -1,0 +1,15 @@
+# raw downloads (the site uses the unpacked/optimised copies in assests/)
+*.zip
+*.crdownload
+
+# unpacked sources that the site doesn't load
+assests/src/airport_tower/
+assests/src/cessna_skyhawk_cockpit/
+assests/src/cessna_182/
+
+# internal project brief
+AviationSpot360_Project_Concept_Developer_Brief.pdf
+
+# local tooling
+.claude/
+__pycache__/

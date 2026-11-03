@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AviationSpot360 — Airspace of Awareness</title>
+  <meta name="theme-color" content="#071226" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,600..800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+    } }
+  </script>
+</head>
+<body>
+  <!-- Pre-flight loader -->
+  <div class="loader" id="loader">
+    <svg class="loader__mark" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="3" opacity=".2" />
+      <circle class="loader__ring" id="loaderRing" cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" pathLength="100" />
+      <path d="M13 37 51 22l-12.5 19-5.5-6-9.5 7 3.5-9.5z" fill="currentColor" />
+    </svg>
+    <p class="loader__label">Pre-flight checks <span id="loaderPct">0%</span></p>
+  </div>
+
+  <!-- Fixed backdrop layers (behind the WebGL canvas) -->
+  <div class="sky" id="sky" aria-hidden="true"></div>
+  <div class="hero-photo" id="heroPhoto" aria-hidden="true"><img src="bg.png" alt="" /></div>
+  <div class="hero-back" id="heroBack" aria-hidden="true">360°</div>
+  <canvas class="webgl" id="webgl" aria-hidden="true"></canvas>
+  <div class="fader" id="fader" aria-hidden="true"></div>
+
+  <header class="nav">
+    <a href="#hero" class="brand" data-to>
+      <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="4" opacity=".35"/><path d="M13 37 51 22l-12.5 19-5.5-6-9.5 7 3.5-9.5z" fill="#c8a46a"/></svg>
+      AviationSpot<b>360</b>
+    </a>
+    <a href="#board" class="btn btn--small magnet" data-to>Early access</a>
+  </header>
+
+  <aside class="alt" aria-hidden="true">
+    <span class="alt__label">ALT</span>
+    <span class="alt__value" id="altValue">00,000</span>
+    <span class="alt__label">FT</span>
+    <div class="alt__track"><span id="altFill"></span></div>
+  </aside>
+
+  <main>
+    <!-- GROUND -->
+    <section class="hero" id="hero" data-stage="sky">
+      <div class="hero__content">
+        <p class="eyebrow"><span class="pulse"></span> Phase 1 · Early access open</p>
+        <h1><span class="hero__brand">AviationSpot<b>360</b></span><span class="hero__tag" id="heroTag">Airspace of Awareness</span></h1>
+        <p class="lede">The ground school, mentor and crew room for student pilots, all in one place. Exam practice, cadet prep, flight-training discovery and a community that climbs together.</p>
+        <div class="hero__cta">
+          <a href="#board" class="btn magnet" data-to>Get your boarding pass <span aria-hidden="true">→</span></a>
+          <a href="#platform" class="btn btn--ghost" data-to>Explore</a>
+        </div>
+      </div>
+      <div class="hero__scroll">Scroll to take off<i></i></div>
+    </section>
+
+    <!-- COCKPIT (sticky, 3D instrument panel) -->
+    <section class="cockpit sticky-sec" id="cockpit" data-stage="cockpit">
+      <div class="sticky">
+        <p class="eyebrow">01 · Before take-off</p>
+        <div class="lines">
+          <p class="line">Every airline captain<br/>started <em>right here.</em></p>
+          <p class="line">Speed. Attitude. Altitude.<br/>Learn to <em>read the scan.</em></p>
+          <p class="line">We take you from the first<br/>exam to the <em>airline cockpit.</em></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5,000 FT: pillars -->
+    <section class="pillars" id="platform" data-stage="sky">
+      <p class="eyebrow">02 · The ecosystem</p>
+      <h2 class="reveal">Six pillars,<br/>one flight plan.</h2>
+      <div class="grid">
+        <article class="card"><span class="card__n">01</span><h3>Exam preparation</h3><p>Country-specific question banks, aircraft and airline practice.</p></article>
+        <article class="card"><span class="card__n">02</span><h3>Learning &amp; mentorship</h3><p>Recorded classes, doubt sessions and bookable 1:1 support.</p></article>
+        <article class="card"><span class="card__n">03</span><h3>Community</h3><p>Study groups, peer challenges and discussion rooms.</p></article>
+        <article class="card"><span class="card__n">04</span><h3>FTO discovery</h3><p>Explore flight-training schools and partners worldwide.</p></article>
+        <article class="card"><span class="card__n">05</span><h3>Cadet &amp; career prep</h3><p>Cadet modules, RTR Part II practice and aviation tools.</p></article>
+        <article class="card"><span class="card__n">06</span><h3>Aviation info</h3><p>News, authority updates, articles, webinars and events.</p></article>
+      </div>
+    </section>
+
+    <div class="marquee" aria-hidden="true"><div class="marquee__track" id="marquee">
+      <span>DGCA</span><i>✦</i><span>SACAA</span><i>✦</i><span>FAA</span><i>✦</i><span>CPL</span><i>✦</i><span>ATPL</span><i>✦</i><span>RTR Part II</span><i>✦</i><span>A320</span><i>✦</i><span>B737</span><i>✦</i><span>Cadet prep</span><i>✦</i>
+      <span>DGCA</span><i>✦</i><span>SACAA</span><i>✦</i><span>FAA</span><i>✦</i><span>CPL</span><i>✦</i><span>ATPL</span><i>✦</i><span>RTR Part II</span><i>✦</i><span>A320</span><i>✦</i><span>B737</span><i>✦</i><span>Cadet prep</span><i>✦</i>
+    </div></div>
+
+    <!-- ENGINE (sticky, exploded turbofan) -->
+    <section class="engine sticky-sec" id="engine" data-stage="engine">
+      <div class="sticky">
+        <div class="engine__copy">
+          <p class="eyebrow">03 · Under the cowling</p>
+          <h2>Know your aircraft,<br/><em>system by system.</em></h2>
+          <p class="engine__sub">Aircraft-specific practice areas, starting with the A320 and B737: powerplant, systems and performance, one module at a time.</p>
+        </div>
+        <div class="engine__labels" id="engineLabels">
+          <span data-part="0">Fan</span><span data-part="1">Compressor</span><span data-part="2">Combustor</span><span data-part="3">Turbine</span><span data-part="4">Exhaust</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10,000 FT: exams -->
+    <section class="exams" data-stage="sky">
+      <p class="eyebrow">04 · Above the clouds</p>
+      <h2 class="reveal">Exam spaces,<br/>built per authority.</h2>
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-i="0">🇮🇳 India · DGCA</button>
+        <button role="tab" aria-selected="false" data-i="1">🇿🇦 South Africa · SACAA</button>
+        <button role="tab" aria-selected="false" data-i="2">🇺🇸 USA · FAA</button>
+      </div>
+      <div class="exam" id="examPanel"></div>
+      <p class="note">More authorities coming. Practice spaces are independent simulations, not official exams.</p>
+    </section>
+
+    <!-- 18,000 FT: departures -->
+    <section class="events" data-stage="sky">
+      <p class="eyebrow">05 · Departures</p>
+      <h2 class="reveal">Upcoming sessions.</h2>
+      <p class="note">Sample schedule. Live events will appear here.</p>
+      <div class="departures" id="departures"></div>
+    </section>
+
+    <!-- FL350: boarding pass -->
+    <section class="signup" id="board" data-stage="sky">
+      <p class="eyebrow">06 · Cruise · FL350</p>
+      <h2 class="reveal">Claim your<br/>boarding pass.</h2>
+
+      <div class="pass-stage" id="passStage">
+        <form class="pass" id="passForm" novalidate>
+          <div class="pass__glare"></div>
+          <div class="pass__main">
+            <div class="pass__head">
+              <span class="pass__logo"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M13 37 51 22l-12.5 19-5.5-6-9.5 7 3.5-9.5z" fill="#c8a46a"/></svg>AviationSpot<b>360</b></span>
+              <span class="pass__kind">Boarding pass · Early access</span>
+            </div>
+            <div class="pass__route">
+              <div><b>GND</b><small>Ground school</small></div>
+              <div class="pass__arc"><svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M4 36 Q100 -10 196 36" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 6"/></svg><span class="pass__plane">✈</span></div>
+              <div class="right"><b>CPT</b><small>The cockpit</small></div>
+            </div>
+            <div class="pass__fields">
+              <label class="wide"><small>Passenger</small><input name="name" required placeholder="Your full name" autocomplete="name" /></label>
+              <label class="wide"><small>Email</small><input name="email" type="email" required placeholder="you@example.com" autocomplete="email" /></label>
+              <label><small>Pathway</small>
+                <select name="pathway" required>
+                  <option value="">Choose</option><option>DGCA CPL</option><option>DGCA ATPL</option><option>SACAA</option><option>FAA</option><option>A320 / B737</option><option>Cadet Prep</option><option>RTR Part II</option>
+                </select>
+              </label>
+              <label><small>Country</small>
+                <select name="country" required>
+                  <option value="">Choose</option><option>India</option><option>South Africa</option><option>United States</option><option>Other</option>
+                </select>
+              </label>
+            </div>
+            <p class="pass__err" id="passErr" role="alert"></p>
+          </div>
+          <div class="pass__stub">
+            <div class="pass__holo"></div>
+            <div class="pass__meta"><small>Flight</small><b>AS360</b></div>
+            <div class="pass__meta"><small>Gate</small><b>EA</b></div>
+            <div class="pass__meta"><small>Seat</small><b>1A</b></div>
+            <button class="btn btn--stub" type="submit">Print pass ✈</button>
+          </div>
+        </form>
+
+        <div class="printed" id="printed" aria-live="polite">
+          <div class="pass pass--printed" id="printedPass">
+            <div class="pass__glare"></div>
+            <div class="pass__main">
+              <div class="pass__head">
+                <span class="pass__logo"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M13 37 51 22l-12.5 19-5.5-6-9.5 7 3.5-9.5z" fill="#c8a46a"/></svg>AviationSpot<b>360</b></span>
+                <span class="pass__kind">Community pass</span>
+              </div>
+              <div class="printed__name" id="pName"></div>
+              <div class="printed__grid">
+                <div><small>Pathway</small><b id="pPath"></b></div>
+                <div><small>Country</small><b id="pCountry"></b></div>
+                <div><small>Pass no.</small><b id="pNo"></b></div>
+                <div><small>Boarding</small><b>Phase 2</b></div>
+              </div>
+              <div class="printed__barcode" id="pBar"></div>
+            </div>
+            <div class="pass__stub">
+              <div class="pass__holo"></div>
+              <div class="pass__meta"><small>Flight</small><b>AS360</b></div>
+              <div class="pass__meta"><small>Seat</small><b>1A</b></div>
+              <div class="pass__meta"><small>Class</small><b>Founding</b></div>
+            </div>
+          </div>
+          <p class="note">You're on the list. Community pass, not a travel document. (Prototype: nothing is sent to a server yet.)</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p class="footer__big">AviationSpot<b>360</b></p>
+    <div class="footer__row">
+      <p>© 2026 AviationSpot360 · Airspace of Awareness</p>
+      <p class="credits">3D models: “Airbus A320” by OUTPISTON (CC BY-NC-SA 4.0) · “Turbine | Turbofan Engine” by blenderbirb · “Cessna 182 Skylane” by VTX (CC BY-NC-SA 4.0) · “Gulfstream G650ER” by Luca Martina (CC BY 4.0), via Sketchfab</p>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
