@@ -222,7 +222,7 @@ export function createRadarStage({ envMap, loader, isSmall }) {
     // orbit round the radar from slightly above, looking down at it ~17°, steepening to ~19°
     const a = 0.5 + p * 1.9;
     const wide = camera.aspect >= 1;
-    const R = wide ? 50 : 70;
+    const R = wide ? 36 : 56;
     const aimY = wide ? 3 : 13; // portrait: radar sits low, under the copy
     const pitch = THREE.MathUtils.degToRad(17 + p * 2);
     camera.position.set(Math.cos(a) * R + pointer.x * 1.5, aimY + Math.tan(pitch) * R - pointer.y * 1.5, Math.sin(a) * R);

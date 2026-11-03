@@ -110,7 +110,7 @@ h1 { margin-bottom: 24px; }
 .radar__copy { position: relative; z-index: 2; max-width: 520px; }
 .radar__copy h2 { margin-bottom: 18px; font-size: clamp(40px, 5.4vw, 76px); }
 .radar__sub { color: var(--dim); max-width: 44ch; }
-.scope { position: absolute; opacity: 0; will-change: transform, opacity; right: clamp(16px, 4vw, 64px); bottom: 7vh; width: min(290px, 30vw); aspect-ratio: 1; border-radius: 50%; border: 1px solid rgba(125, 255, 196, .3); box-shadow: 0 0 0 8px rgba(6, 14, 30, .55), 0 30px 60px -20px rgba(0,0,0,.7), inset 0 0 40px rgba(0,0,0,.6); }
+.scope { position: absolute; opacity: 0; will-change: transform, opacity; right: clamp(14px, 2vw, 32px); bottom: 5vh; width: min(210px, 20vw); aspect-ratio: 1; border-radius: 50%; border: 1px solid rgba(125, 255, 196, .3); box-shadow: 0 0 0 8px rgba(6, 14, 30, .55), 0 30px 60px -20px rgba(0,0,0,.7), inset 0 0 40px rgba(0,0,0,.6); }
 
 /* ---------- Pillars ---------- */
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; perspective: 1000px; }
