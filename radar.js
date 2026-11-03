@@ -5,7 +5,7 @@ import * as THREE from 'three';
 
 const CUT_HEAD = -3.6;  // world-Y: everything above turns (pedestal, yoke, array)
 const AXIS = new THREE.Vector2(0.07, 0.05); // pedestal axis in XZ
-const SPIN = 0.9; // rad/s, a little under a real ASR's 12-15 rpm so it reads on screen
+const SPIN = 1.35; // rad/s, about 13 rpm, in the range of a real ASR (12-15 rpm)
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
 const C = {
@@ -122,6 +122,7 @@ export function createRadarStage({ envMap, loader, isSmall }) {
   scene.add(rim);
 
   const radar = new THREE.Group();
+  radar.scale.setScalar(0.85);
   scene.add(radar);
   const head = new THREE.Group();
   radar.add(head);
@@ -129,11 +130,11 @@ export function createRadarStage({ envMap, loader, isSmall }) {
 
   // concrete mast with orange/white obstruction bands near the top
   const concrete = new THREE.MeshStandardMaterial({ color: 0x858a92, roughness: 0.92 });
-  const mast = new THREE.Mesh(new THREE.CylinderGeometry(3.3, 4.6, 34, 40), concrete);
-  mast.position.y = -5.15 - 17;
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(3.3, 4.1, 16, 40), concrete);
+  mast.position.y = -5.15 - 8;
   radar.add(mast);
   const bandMat = [new THREE.MeshStandardMaterial({ color: 0xe5602b, roughness: 0.7 }), new THREE.MeshStandardMaterial({ color: 0xf1efe9, roughness: 0.7 })];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 3; i++) {
     const band = new THREE.Mesh(new THREE.CylinderGeometry(3.36 + i * 0.075, 3.43 + i * 0.075, 1.9, 40, 1, true), bandMat[i % 2]);
     band.position.y = -6.1 - i * 1.9;
     radar.add(band);
@@ -209,7 +210,7 @@ export function createRadarStage({ envMap, loader, isSmall }) {
     // arrive: rise up the mast with a slight turn, spin up, then lights and beam come on;
     // leave: the same in reverse
     const e = 1 - Math.pow(1 - presence, 3);
-    radar.position.y = -44 * (1 - e);
+    radar.position.y = -30 * (1 - e);
     radar.rotation.y = (1 - e) * 0.9;
     sweep += dt * (reduceMotion ? 0.25 : SPIN) * (0.12 + 0.88 * e);
     head.rotation.y = -sweep; // clockwise seen from above, like the scope
@@ -224,7 +225,7 @@ export function createRadarStage({ envMap, loader, isSmall }) {
     const R = wide ? 50 : 70;
     camera.position.set(Math.cos(a) * R + pointer.x * 1.5, -12 + p * 14 - pointer.y * 1.5, Math.sin(a) * R);
     const right = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a)); // screen-left of the radar
-    camera.lookAt(right.multiplyScalar(wide ? 13 : 0).add(new THREE.Vector3(0, wide ? -4 : 11, 0))); // portrait: radar sits low, under the copy
+    camera.lookAt(right.multiplyScalar(wide ? 7 : 0).add(new THREE.Vector3(0, wide ? 3 : 13, 0))); // portrait: radar sits low, under the copy
   }
   return { scene, camera, update, sweepAngle: () => sweep };
 }

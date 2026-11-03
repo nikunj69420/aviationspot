@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
-import { createRadarStage, createScope } from './radar.js?v=6';
+import { createRadarStage, createScope } from './radar.js?v=8';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -540,7 +540,7 @@ const RADAR_K = KEYS.findIndex((key) => key.stage === 'radar');
 function updateRadar(dt, time, k) {
   const p = stickyProgress(radarSec);
   // 0 → 1 as the radar arrives and back to 0 as it leaves (the stage swaps in at RADAR_K ± 0.5)
-  const presence = Math.min(range(k, RADAR_K - 0.5, RADAR_K - 0.12), 1 - range(k, RADAR_K + 0.12, RADAR_K + 0.5));
+  const presence = Math.min(range(k, RADAR_K - 0.5, RADAR_K - 0.3), 1 - range(k, RADAR_K + 0.3, RADAR_K + 0.5));
   radar.update({ p, dt, time, pointer, reduceMotion, presence });
   radarCopy.style.opacity = presence;
   radarCopy.style.transform = `translateY(${(1 - presence) * 40}px)`;
