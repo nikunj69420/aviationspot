@@ -30,11 +30,9 @@ MODELS = [
      ["--simplify-ratio", "0.2", "--simplify-error", "0.002"]),
     ("assests/a320/scene_as360.gltf", "assests/a320/a320.glb", {"*": 2048}, ["--simplify", "false"]),
     ("assests/radar/scene.gltf", "assests/radar/radar.glb", {"*": 1024}, ["--simplify", "false"]),
-    ("assests/src/hangar/scene.gltf", "assests/hangar/hangar.glb", {"*": 1024}, ["--simplify", "false"]),
 ]
-# materials to strip before compressing (the hangar ships with a motor-glider parked inside)
-DROP = {"assests/hangar/hangar.glb": {"Plane_Body", "Body_Plane", "Plane_Body02", "Translucent_Glass_Gray",
-                                     "edge_color000255", "edge_color255245238255"}}
+# materials to strip before compressing, per output (none needed at the moment)
+DROP: dict = {}
 
 
 def drop_materials(g: dict, names: set) -> None:
