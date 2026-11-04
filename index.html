@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,600..800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=17" />
+  <link rel="stylesheet" href="style.css?v=21" />
   <script type="importmap">
     { "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
@@ -95,11 +95,26 @@
       <span>DGCA</span><i>✦</i><span>SACAA</span><i>✦</i><span>FAA</span><i>✦</i><span>CPL</span><i>✦</i><span>ATPL</span><i>✦</i><span>RTR Part II</span><i>✦</i><span>A320</span><i>✦</i><span>B737</span><i>✦</i><span>Cadet prep</span><i>✦</i>
     </div></div>
 
+    <!-- WALKAROUND (sticky, A320 in the hangar) -->
+    <section class="walk sticky-sec" id="walkaround" data-stage="walk">
+      <div class="sticky">
+        <div class="walk__copy">
+          <p class="eyebrow">03 · Pre-flight walkaround</p>
+          <h2>Walk around<br/><em>the A320.</em></h2>
+          <p class="walk__intro">Every flight starts on the ramp. Follow the captain's exterior check, one stop at a time. Drag to look around.</p>
+          <div class="walk__card" id="walkCard" aria-live="polite"></div>
+        </div>
+        <ol class="walk__list" id="walkList" aria-label="Walkaround checklist"><li><i></i>Nose & pitot probes</li><li><i></i>Nose gear</li><li><i></i>Right engine</li><li><i></i>Right wing</li><li><i></i>Main gear & brakes</li><li><i></i>Tail & APU</li><li><i></i>Left wingtip</li></ol>
+        <div class="walk__hotspots" id="walkHotspots"></div>
+        <p class="walk__note">Draft content · to be reviewed by instructors</p>
+      </div>
+    </section>
+
     <!-- ENGINE (sticky, exploded turbofan) -->
     <section class="engine sticky-sec" id="engine" data-stage="engine">
       <div class="sticky">
         <div class="engine__copy">
-          <p class="eyebrow">03 · Under the cowling</p>
+          <p class="eyebrow">04 · Under the cowling</p>
           <h2>Know your aircraft,<br/><em>system by system.</em></h2>
           <p class="engine__sub">Aircraft-specific practice areas, starting with the A320 and B737: powerplant, systems and performance, one module at a time.</p>
         </div>
@@ -111,7 +126,7 @@
 
     <!-- 10,000 FT: exams -->
     <section class="exams" data-stage="sky">
-      <p class="eyebrow">04 · Above the clouds</p>
+      <p class="eyebrow">05 · Above the clouds</p>
       <h2 class="reveal">Exam spaces,<br/>built per authority.</h2>
       <div class="auth">
         <div class="auth__list" role="tablist" aria-label="Examination authority">
@@ -129,7 +144,7 @@
     <section class="radar sticky-sec" id="radar" data-stage="radar">
       <div class="sticky">
         <div class="radar__copy">
-          <p class="eyebrow">05 · Radar contact</p>
+          <p class="eyebrow">06 · Radar contact</p>
           <h2>Always in<br/><em>radar contact.</em></h2>
           <p class="radar__sub">Mentors, study groups and authority updates that keep you on course, from your first ground-school exam to the airline cockpit.</p>
         </div>
@@ -139,7 +154,7 @@
 
     <!-- 18,000 FT: departures -->
     <section class="events" data-stage="sky">
-      <p class="eyebrow">06 · Departures</p>
+      <p class="eyebrow">07 · Departures</p>
       <h2 class="reveal">Upcoming sessions.</h2>
       <p class="note">Sample schedule. Live events will appear here.</p>
       <div class="departures" id="departures"></div>
@@ -147,7 +162,7 @@
 
     <!-- FL350: boarding pass -->
     <section class="signup" id="board" data-stage="sky">
-      <p class="eyebrow">07 · Cruise · FL350</p>
+      <p class="eyebrow">08 · Cruise · FL350</p>
       <h2 class="reveal">Claim your<br/>boarding pass.</h2>
 
       <div class="pass-stage" id="passStage">
@@ -206,13 +221,13 @@
     <p class="footer__big">AviationSpot<b>360</b></p>
     <div class="footer__row">
       <p>© 2026 AviationSpot360 · Airspace of Awareness</p>
-      <p class="credits">3D models: “Airbus A320” by OUTPISTON (CC BY-NC-SA 4.0) · “Jet Engine” by Pilot · “Radar Turret” by 1738 Creations · “Cessna 182 Skylane” by VTX (CC BY-NC-SA 4.0) · “Gulfstream G650ER” by Luca Martina (CC BY 4.0), via Sketchfab</p>
+      <p class="credits">3D models: “Airbus A320” by OUTPISTON (CC BY-NC-SA 4.0) · “Jet Engine” by Pilot · “Radar Turret” by 1738 Creations · “Aircraft Hangar” by jimbogies · “Cessna 182 Skylane” by VTX (CC BY-NC-SA 4.0) · “Gulfstream G650ER” by Luca Martina (CC BY 4.0), via Sketchfab</p>
     </div>
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
   <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script type="module" src="main.js?v=33"></script>
+  <script type="module" src="main.js?v=38"></script>
 </body>
 </html>

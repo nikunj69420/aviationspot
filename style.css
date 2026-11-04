@@ -112,6 +112,34 @@ h1 { margin-bottom: 24px; }
 .radar__sub { color: var(--dim); max-width: 44ch; }
 .scope { position: absolute; opacity: 0; will-change: transform, opacity; right: clamp(14px, 2vw, 32px); bottom: 5vh; width: min(210px, 20vw); aspect-ratio: 1; border-radius: 50%; border: 1px solid rgba(125, 255, 196, .3); box-shadow: 0 0 0 8px rgba(6, 14, 30, .55), 0 30px 60px -20px rgba(0,0,0,.7), inset 0 0 40px rgba(0,0,0,.6); }
 
+/* ---------- Walkaround ---------- */
+.walk.sticky-sec { height: 820vh; }
+.walk .sticky { justify-content: center; cursor: grab; }
+.walk .sticky { position: sticky; isolation: isolate; }
+.walk .sticky::before { content: ""; position: absolute; inset: 0 auto 0 0; width: min(620px, 60vw); z-index: -1; pointer-events: none; background: linear-gradient(90deg, rgba(10, 8, 6, .78), rgba(10, 8, 6, .45) 60%, transparent); }
+.walk .sticky:active { cursor: grabbing; }
+.walk__copy { position: relative; z-index: 2; max-width: 420px; }
+.walk__copy h2 { font-size: clamp(38px, 5vw, 70px); margin-bottom: 14px; }
+.walk__intro { color: var(--dim); margin-bottom: 22px; max-width: 40ch; }
+.walk__card { padding: 22px 24px; border-radius: 16px; background: rgba(10, 14, 24, .72); border: 1px solid var(--line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); min-height: 220px; }
+.walk__step { font: 700 11px var(--font); letter-spacing: .18em; text-transform: uppercase; color: var(--amber); }
+.walk__card h3 { font: 800 24px/1.2 var(--display); letter-spacing: -.02em; margin: 6px 0 12px; }
+.walk__card p { font-size: 15px; color: var(--dim); margin-top: 10px; }
+.walk__card p b { display: block; font: 700 11px var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); margin-bottom: 2px; }
+.walk__list { position: absolute; right: clamp(16px, 4vw, 64px); top: 50%; transform: translateY(-50%); z-index: 2; list-style: none; padding: 16px 18px; margin: 0; display: grid; gap: 9px; border-radius: 14px; background: rgba(10, 14, 24, .55); border: 1px solid var(--line); backdrop-filter: blur(10px); }
+.walk__list li { display: flex; align-items: center; gap: 10px; font: 600 13px var(--font); color: var(--dim); transition: color .3s; }
+.walk__list li i { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.35); font: 800 10px var(--font); font-style: normal; transition: background .3s, border-color .3s; }
+.walk__list li.is-current { color: var(--ink); }
+.walk__list li.is-current i { border-color: var(--amber); }
+.walk__list li.is-done i { background: var(--amber); border-color: var(--amber); color: #14110b; }
+.walk__list li.is-done i::before { content: "\2713"; }
+.walk__hotspots { visibility: hidden; }
+.walk__hotspots.is-live { visibility: visible; }
+.walk__hotspots button { position: fixed; left: 0; top: 0; z-index: 3; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; border: 2px solid #fff; background: rgba(200, 164, 106, .8); color: #14110b; font: 800 12px var(--font); cursor: pointer; transition: opacity .3s; }
+.walk__hotspots button.is-current { background: var(--amber); animation: hotspot 1.6s infinite; }
+@keyframes hotspot { 0% { box-shadow: 0 0 0 0 rgba(200,164,106,.65); } 70% { box-shadow: 0 0 0 16px rgba(200,164,106,0); } 100% { box-shadow: 0 0 0 0 rgba(200,164,106,0); } }
+.walk__note { position: absolute; left: clamp(20px, 6vw, 96px); bottom: 4vh; z-index: 2; font-size: 12px; color: var(--dim); }
+
 /* ---------- Pillars ---------- */
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; perspective: 1000px; }
 .card { position: relative; padding: 30px; border-radius: 16px; background: linear-gradient(160deg, rgba(14, 38, 84, .72), rgba(7, 18, 38, .6)); border: 1px solid rgba(255,255,255,.22); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); transform-style: preserve-3d; will-change: transform; box-shadow: 0 30px 60px -30px rgba(4, 12, 30, .5); overflow: hidden; }
@@ -250,6 +278,12 @@ h1 { margin-bottom: 24px; }
   .alt, .hero-back { display: none; }
 }
 @media (max-width: 600px) {
+  .walk .sticky { justify-content: space-between; padding-block: 11vh 5vh; }
+  .walk__intro, .walk__list, .walk__note { display: none; }
+  .walk__copy { position: static; } /* so the card anchors to the pinned scene, not the copy */
+  .walk__card { position: absolute; left: 16px; right: 16px; bottom: 4vh; min-height: 0; padding: 16px 18px; }
+  .walk__card h3 { font-size: 19px; }
+  .walk__card p { font-size: 13px; }
   .radar .sticky { justify-content: flex-start; padding-top: 12vh; }
   .scope { width: 132px; bottom: 4vh; }
   body { font-size: 16px; }

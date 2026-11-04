@@ -4,6 +4,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 import { createRadarStage, createScope } from './radar.js?v=11';
+import { createWalkaround, STOPS, POSE_COUNT } from './walk.js?v=4';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -40,6 +41,7 @@ const KEYS = [
   { stage: 'sky', pm: [0.3, -4.3, 0], p: [2.7, -0.5, 2.2], r: [-0.12, -2.3, 0.07], s: 1.25, cy: -22, alt: 0, sky: ['#0b1a3a', '#3b4f8a', '#f08a5d'] },
   { stage: 'cockpit', p: [-9, 4, -8], r: [0.2, -2.6, 0.3], s: 1, cy: 6, alt: 400, sky: ['#14214a', '#5b5a8f', '#f3a274'] },
   { stage: 'sky', p: [1.2, 1.8, -10], r: [0.25, 1.1, 0.12], s: 1, cy: -3.2, alt: 5000, sky: ['#2a63b4', '#6aa3dc', '#d6e8f6'] },
+  { stage: 'walk', p: [9, 5, -14], r: [0.3, -0.5, 0.06], s: 1, cy: -4, alt: 6000, sky: ['#120f0c', '#1f1a14', '#2b231a'] },
   { stage: 'engine', p: [3.8, 0.4, -2], r: [-0.3, -0.5, 0.06], s: 1, cy: -4, alt: 8000, sky: ['#040a17', '#0a1830', '#13284d'] },
   { stage: 'sky', p: [3.5, 0.2, -1.5], r: [-0.08, -0.32, 0.04], s: 1.1, cy: -4.5, alt: 10000, sky: ['#12397a', '#3f7ccb', '#a9cdee'] },
   { stage: 'radar', p: [9, 6, -14], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -7, alt: 14000, sky: ['#0a1230', '#2b2c55', '#b8684a'] },
@@ -48,23 +50,31 @@ const KEYS = [
   { stage: 'sky', p: [10, 5.5, -5], r: [0.1, -0.2, 0.12], s: 1, cy: -8, alt: 35000, sky: ['#071226', '#3a3566', '#d98a4f'] },
 ];
 const sections = [...document.querySelectorAll('main > section'), document.querySelector('.footer')];
-let centers = [];
+// Each section owns a span of scroll where its keyframe holds: a normal section is just its midpoint,
+// a pinned 3D section holds for the whole time it's pinned. Scene changes happen between spans.
+let spans = [];
 const measure = () => {
-  centers = sections.map((el) => el.offsetTop + el.offsetHeight / 2);
-  centers[0] = innerHeight / 2;
-  centers[centers.length - 1] = document.documentElement.scrollHeight - innerHeight / 2;
+  const H = innerHeight;
+  spans = sections.map((el) => {
+    const top = el.offsetTop, h = el.offsetHeight;
+    return el.classList.contains('sticky-sec') ? [top + H / 2, top + h - H / 2] : [top + h / 2, top + h / 2];
+  });
+  spans[0] = [H / 2, Math.max(H / 2, spans[0][1])];
+  const end = document.documentElement.scrollHeight - H / 2;
+  spans[spans.length - 1] = [end, end];
 };
 ScrollTrigger.addEventListener('refresh', measure);
 measure();
 
-// Continuous position along KEYS, e.g. 2.4 = 40% of the way from pillars to engine
+// Continuous position along KEYS, e.g. 2.4 = 40% of the way from pillars to the walkaround
 function keyPosition() {
   const y = scrollY + innerHeight / 2;
-  if (y <= centers[0]) return 0;
-  for (let i = 0; i < centers.length - 1; i++) {
-    if (y < centers[i + 1]) return i + smooth((y - centers[i]) / (centers[i + 1] - centers[i]));
+  if (y <= spans[0][1]) return 0;
+  for (let i = 0; i < spans.length - 1; i++) {
+    if (y <= spans[i][1]) return i;
+    if (y < spans[i + 1][0]) return i + smooth((y - spans[i][1]) / (spans[i + 1][0] - spans[i][1]));
   }
-  return centers.length - 1;
+  return spans.length - 1;
 }
 const colors = KEYS.map((k) => k.sky.map((c) => new THREE.Color(c)));
 function sample(k) {
@@ -171,6 +181,9 @@ loader.load('assests/a320/a320.glb', (gltf) => {
   normalise(wrap, 4.6);
   plane.add(wrap);
   plane.visible = true;
+  const parked = model.clone(true);
+  parked.rotation.set(0, 0, 0); // walkaround works in the model's own metres
+  walk.setAircraft(parked);
 });
 
 // Clouds: soft sprite puffs drifting toward the camera
@@ -356,7 +369,10 @@ engine.scene.add(flow);
 /* Stage 4: RADAR — surveillance radar on its mast at dusk (see radar.js) */
 const radar = createRadarStage({ envMap, loader, isSmall });
 
-const stages = { sky, cockpit, engine, radar };
+/* Stage 5: WALKAROUND — the A320 in a hangar, toured stop by stop (see walk.js) */
+const walk = createWalkaround({ envMap });
+
+const stages = { sky, cockpit, engine, radar, walk };
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
@@ -372,6 +388,7 @@ resize();
 
 /* ---------- Lazy assets (after the page is up) ---------- */
 function loadLazy() {
+  lazyLoader.load('assests/hangar/hangar.glb', (gltf) => walk.setHangar(gltf.scene));
   lazyLoader.load('assests/jet_engine/jet_engine.glb', (gltf) => {
     const m = gltf.scene;
     m.traverse((o) => { if (o.isMesh) o.material.envMapIntensity = 1.1; });
@@ -455,7 +472,7 @@ function updateSky(dt, time, target, ease) {
 
   // contrails get thicker the higher we fly
   const k = target.i + target.t;
-  const trailVis = plane.visible ? Math.max(range(k, 1.6, 2.4) * (1 - range(k, 7.4, 8)), departure.t > 0 ? 1 : 0) : 0;
+  const trailVis = plane.visible ? Math.max(range(k, 1.6, 2.4) * (1 - range(k, 8.4, 9)), departure.t > 0 ? 1 : 0) : 0;
   fwd.set(1, 0, 0).applyQuaternion(plane.quaternion);
   for (let e = 0; e < 2; e++) {
     const idx = e * TRAIL + trailHead;
@@ -479,12 +496,12 @@ function updateSky(dt, time, target, ease) {
   trailGeo.attributes.alpha.needsUpdate = true;
   trailGeo.attributes.size.needsUpdate = true;
 
-  stars.material.opacity = range(k, 6.4, 7.2) * 0.85;
+  stars.material.opacity = range(k, 7.4, 8.2) * 0.85;
   flareLight.intensity = 1;
-  flare.visible = k < 0.9 || k > 6.5;
+  flare.visible = k < 0.9 || k > 7.5;
 
   // G650 crosses right → left behind the departure board
-  const jt = clamp01((k - 5.45) / 1.3);
+  const jt = clamp01((k - 6.45) / 1.3);
   jet.visible = jet.children.length > 0 && jt > 0 && jt < 1;
   if (jet.visible) {
     jet.position.set(lerp(13, -13, jt), lerp(-3.4, -1.6, jt) + Math.sin(time) * 0.05, -6);
@@ -545,6 +562,56 @@ function updateEngine(dt) {
   });
 }
 
+const walkSec = document.getElementById('walkaround');
+const walkUI = document.getElementById('walkHotspots');
+const walkCard = document.getElementById('walkCard');
+const walkItems = [...document.querySelectorAll('#walkList li')];
+walkUI.innerHTML = STOPS.map((s, i) => `<button type="button" data-stop="${i}" aria-label="Stop ${i + 1}: ${s.title}">${i + 1}</button>`).join('');
+const walkDots = [...walkUI.children];
+let walkStop = -1;
+function walkStopP(i) { return (i + 0.25) / (POSE_COUNT - 1); } // a point inside stop i's hold
+walkDots.forEach((b) => b.addEventListener('click', () => {
+  const y = walkSec.offsetTop + walkStopP(+b.dataset.stop) * (walkSec.offsetHeight - innerHeight);
+  lenis ? lenis.scrollTo(y, { duration: 1.6 }) : scrollTo(0, y);
+}));
+function showStop(i) {
+  const done = i >= STOPS.length;
+  const s = STOPS[i];
+  walkCard.innerHTML = done
+    ? '<span class="walk__step">Walkaround complete</span><h3>All seven checks done ✓</h3><p>Next: the engine, under the cowling.</p>'
+    : `<span class="walk__step">Stop ${i + 1} / ${STOPS.length}</span><h3>${s.title}</h3>`
+      + `<p><b>Check</b>${s.check}</p><p><b>Exam fact</b>${s.fact}</p>`;
+  gsap.fromTo(walkCard.children, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.05, ease: 'expo.out' });
+}
+// drag anywhere in the scene to look around the current stop
+let dragX = null, dragY = null;
+walkSec.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('button, a')) return;
+  dragX = e.clientX; dragY = e.clientY; walk.drag.active = true;
+});
+addEventListener('pointermove', (e) => {
+  if (dragX === null) return;
+  walk.drag.yaw += (e.clientX - dragX) * 0.006;
+  walk.drag.pitch = Math.max(-0.4, Math.min(0.6, walk.drag.pitch - (e.clientY - dragY) * 0.004));
+  dragX = e.clientX; dragY = e.clientY;
+});
+addEventListener('pointerup', () => { dragX = null; walk.drag.active = false; });
+function updateWalk(dt) {
+  const p = stickyProgress(walkSec);
+  const { stop, moving } = walk.update({ p, dt, pointer, wide: innerWidth / innerHeight >= 1 });
+  if (stop !== walkStop) { walkStop = stop; showStop(stop); }
+  walkItems.forEach((li, i) => {
+    li.classList.toggle('is-done', i < stop);
+    li.classList.toggle('is-current', i === stop);
+  });
+  walk.hotspots(innerWidth, innerHeight).forEach((h, i) => {
+    const el = walkDots[i];
+    el.style.transform = `translate(${h.x}px, ${h.y}px)`;
+    el.style.opacity = h.visible ? (i === stop ? 1 : 0.55) * (moving ? 0.5 : 1) : 0;
+    el.classList.toggle('is-current', i === stop);
+  });
+}
+
 const radarSec = document.getElementById('radar');
 const radarCopy = radarSec.querySelector('.radar__copy');
 const scopeEl = document.getElementById('scope');
@@ -573,7 +640,7 @@ function frame() {
   // flash between stages: white like punching through cloud, dark into the engine
   const flash = A.stage !== B.stage ? clamp01(1 - Math.abs(t - 0.5) * 7) : 0;
   faderEl.style.opacity = flash;
-  faderEl.style.background = [A.stage, B.stage].some((st) => st === 'engine' || st === 'radar')
+  faderEl.style.background = [A.stage, B.stage].some((st) => st === 'engine' || st === 'radar' || st === 'walk')
     ? 'radial-gradient(circle, #13284d, #040a17)' : '';
 
   const [top, mid, bot] = target.sky;
@@ -585,6 +652,8 @@ function frame() {
   updateSky(dt, time, target, ease); // always runs so the A320 keeps its place
   if (stage === 'cockpit') updateCockpit(dt);
   if (stage === 'radar') updateRadar(dt, time, target.i + target.t);
+  walkUI.classList.toggle('is-live', stage === 'walk');
+  if (stage === 'walk') updateWalk(dt);
   if (stage === 'engine') updateEngine(dt);
   else labels.forEach((el) => (el.style.opacity = 0));
 
