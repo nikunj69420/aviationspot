@@ -220,10 +220,9 @@ h1 { margin-bottom: 24px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .pass input:disabled, .pass select:disabled { opacity: 1; color: var(--navy-2); -webkit-text-fill-color: var(--navy-2); }
 .pass__stamp { position: absolute; right: 36px; top: 168px; z-index: 3; padding: 6px 14px; border: 3px solid #b3261e; border-radius: 6px; color: #b3261e; font: 800 20px var(--display); letter-spacing: .14em; text-transform: uppercase; opacity: 0; transform: rotate(-12deg); mix-blend-mode: multiply; pointer-events: none; }
-.pass__creases { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; z-index: 4; pointer-events: none; }
 .pass.is-torn { background: transparent; box-shadow: none; -webkit-mask: none; mask: none; }
 .pass.is-torn .pass__glare { display: none; }
-.pass.is-torn .pass__main { background: var(--cream); box-shadow: 0 30px 60px -30px rgba(0,0,0,.6); will-change: transform, clip-path; }
+.pass.is-torn .pass__main { background: var(--cream); box-shadow: 0 30px 60px -30px rgba(0,0,0,.6); will-change: transform, filter, opacity; }
 .pass.is-torn .pass__stub { will-change: transform; }
 .clearance { display: none; max-width: 640px; }
 .clearance.is-on { display: block; }

@@ -418,6 +418,7 @@ addEventListener('pointermove', (e) => {
 let started = false;
 
 const departure = { t: 0 }; // 0 = on station, 1 = gone (climbed out after boarding)
+const handoff = { x: 0 }; // world-X offset while the A320 decelerates in from the pass hand-off cut
 function updateSky(dt, time, target, ease) {
   for (let i = 0; i < 3; i++) {
     cur.p[i] = lerp(cur.p[i], target.p[i], ease);
@@ -431,6 +432,7 @@ function updateSky(dt, time, target, ease) {
   plane.position.set(cur.p[0] + pointer.x * 0.4, cur.p[1] + bob - pointer.y * 0.3, cur.p[2]);
   plane.rotation.set(cur.r[0] + sway + pointer.x * 0.12, cur.r[1], cur.r[2] + bob * 0.3);
   plane.scale.setScalar(cur.s * (sky.camera.aspect < 1 ? 0.75 : 1));
+  plane.position.x += handoff.x;
   if (departure.t > 0) {
     const d = departure.t * departure.t;
     plane.rotation.z += departure.t * 0.32; // pitch up into the climb
@@ -798,7 +800,7 @@ gsap.to(flight, {
   },
 });
 
-// Boarding: check in → stamp → stub tears off → pass crumples → flies into the A320 → take-off
+// Boarding: check in → stamp → stub tears off → the pass whip-cuts into the A320 → take-off
 const CHECKIN_MS = 5000; // how long "Checking in…" holds before the pass tears away
 const passMain = form.querySelector('.pass__main');
 const passStub = form.querySelector('.pass__stub');
@@ -806,64 +808,37 @@ const passBtn = form.querySelector('.btn--stub');
 const passStatus = form.querySelector('.pass__status');
 const passStamp = form.querySelector('.pass__stamp');
 const passBar = form.querySelector('.pass__progress span');
-const passCreases = form.querySelector('.pass__creases');
 const clearance = document.getElementById('clearance');
 const BTN_LABEL = passBtn.innerHTML;
 
-// crease lines for the crumpled paper (dark fold + light ridge)
-passCreases.innerHTML = Array.from({ length: 16 }, () => {
-  const pts = Array.from({ length: 3 }, () => `${(Math.random() * 100).toFixed(1)},${(Math.random() * 100).toFixed(1)}`).join(' ');
-  return `<polyline points="${pts}" fill="none" stroke="rgba(16,28,51,.38)" stroke-width=".5"/>`
-    + `<polyline points="${pts}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width=".35" transform="translate(.6 .4)"/>`;
-}).join('');
-
-// clip-path polygons: the flat sheet, a first fold, and a paper ball (same point count so they tween)
-const N = 28;
-const poly = (pts) => `polygon(${pts.map(([x, y]) => `${x.toFixed(2)}% ${y.toFixed(2)}%`).join(', ')})`;
-function sheetPoints() {
-  return Array.from({ length: N }, (_, i) => {
-    const t = (i / N) * 4, side = Math.floor(t), f = t - side;
-    return [[f * 100, 0], [100, f * 100], [100 - f * 100, 100], [0, 100 - f * 100]][side];
-  });
-}
-function crumplePoints(aspect) {
-  const sheet = sheetPoints();
-  const jit = (a) => (Math.random() - 0.5) * a;
-  const fold = sheet.map(([x, y]) => [50 + (x - 50) * 0.8 + jit(9), 50 + (y - 50) * 0.82 + jit(12)]);
-  const ball = sheet.map((_, i) => {
-    const a = (i / N) * Math.PI * 2 - Math.PI * 0.75, r = 17 + Math.random() * 6;
-    return [50 + Math.cos(a) * r / aspect, 50 + Math.sin(a) * r];
-  });
-  return { sheet, fold, ball };
-}
 // jagged edge where the stub rips off along the perforation
 function tornEdge(el) {
   const h = el.offsetHeight, steps = Math.round(h / 9), pts = ['100% 0', '100% 100%'];
   for (let i = steps; i >= 0; i--) pts.push(`${i % 2 ? 0 : 7}px ${((i / steps) * 100).toFixed(1)}%`);
   return `polygon(${pts.join(', ')})`;
 }
-function planeOnScreen() {
-  plane.updateMatrixWorld();
-  const v = plane.getWorldPosition(new THREE.Vector3()).project(sky.camera);
-  return { x: (v.x * 0.5 + 0.5) * innerWidth, y: (-v.y * 0.5 + 0.5) * innerHeight };
-}
-// toss the balled-up pass along an arc into the aircraft
-function tossToPlane(el) {
-  const r = el.getBoundingClientRect(), to = planeOnScreen();
-  const dx = to.x - (r.left + r.width / 2), dy = to.y - (r.top + r.height / 2);
-  const base = { x: gsap.getProperty(el, 'x'), y: gsap.getProperty(el, 'y'), s: gsap.getProperty(el, 'scale'), r: gsap.getProperty(el, 'rotate') };
-  const cx = dx * 0.3, cy = Math.min(dy, 0) - 180; // control point above the line: a lob, not a beeline
-  const p = { t: 0 };
-  return gsap.to(p, {
-    t: 1, duration: 1.15, ease: 'power1.in',
-    onUpdate: () => {
-      const t = p.t, u = 1 - t;
-      gsap.set(el, {
-        x: base.x + 2 * u * t * cx + t * t * dx, y: base.y + 2 * u * t * cy + t * t * dy,
-        scale: base.s * (1 - t * 0.85), rotate: base.r + t * 420, opacity: t > 0.85 ? (1 - t) / 0.15 : 1,
-      });
-    },
-  });
+
+// Pass → plane hand-off, ported from the HyperFrames "cut-the-curve" primitive: a velocity-matched
+// hard cut. The pass accelerates right (power4.in) and blurs; at peak speed it swaps for the A320,
+// which arrives from the far side of the same vector at the same blur and decelerates (power4.out).
+// Distances keep the primitive's split, so the speed at the seam matches.
+const CUT = { duration: 1.1, cutFraction: 0.33, blurPx: 12, seamOpacity: 0.72, outDistance: 0.34 };
+function cutTheCurve() {
+  const T = CUT.duration, cutAt = T * CUT.cutFraction, entry = T - cutAt;
+  const outPx = innerWidth * CUT.outDistance;
+  const inPx = outPx * (entry / cutAt);
+  // screen pixels → world units at the plane's depth, so the A320 crosses the same screen distance
+  const depth = sky.camera.position.distanceTo(plane.position);
+  const worldPerPx = (2 * depth * Math.tan(THREE.MathUtils.degToRad(sky.camera.fov / 2))) / innerHeight;
+  const seam = `blur(${CUT.blurPx}px)`;
+  return gsap.timeline()
+    .to(passMain, { x: outPx, opacity: CUT.seamOpacity, filter: seam, duration: cutAt, ease: 'power4.in' })
+    // the cut: one owner of visibility, matched blur and opacity on both sides
+    .set(passMain, { opacity: 0 })
+    .set(canvas, { filter: seam })
+    .set(handoff, { x: -inPx * worldPerPx })
+    .to(handoff, { x: 0, duration: entry, ease: 'power4.out' })
+    .to(canvas, { filter: 'blur(0px)', duration: entry, ease: 'power4.out', clearProps: 'filter' }, '<');
 }
 
 form.addEventListener('submit', (e) => {
@@ -917,19 +892,9 @@ function board(passNo) {
   tl.to(passStub, { x: wide ? 10 : 0, y: wide ? 0 : 10, rotate: wide ? 3 : -2, duration: 0.14, ease: 'power2.out' });
   tl.to(passStub, { x: wide ? 70 : 30, y: 320, rotate: wide ? 26 : -18, opacity: 0, duration: 1, ease: 'power2.in', transformOrigin: 'top left' });
 
-  // the pass creases, folds and balls up
-  tl.add(() => {
-    const { sheet, fold, ball } = crumplePoints(passMain.offsetWidth / passMain.offsetHeight);
-    gsap.timeline()
-      .set(passMain, { clipPath: poly(sheet), transformOrigin: '50% 50%' })
-      .to(passCreases, { opacity: 1, duration: 0.45 })
-      .to(passMain, { clipPath: poly(fold), scale: 0.9, rotate: -7, skewX: 5, duration: 0.4, ease: 'power2.in' }, '<')
-      // outline eases straight in (an overshooting ease would fold it inside out); the body gets the wind-up
-      .to(passMain, { clipPath: poly(ball), duration: 0.5, ease: 'power2.in' })
-      .to(passMain, { scale: 0.5, rotate: 26, skewX: 0, filter: 'brightness(.9) drop-shadow(0 12px 14px rgba(0,0,0,.45))', duration: 0.5, ease: 'back.in(1.6)' }, '<')
-      .add(() => tossToPlane(passMain), '+=0.15')
-      .add(() => gsap.to(departure, { t: 1, duration: 2.8, ease: 'power2.in', onComplete: showClearance }), '+=1.2');
-  }, '-=0.5');
+  // the pass whips off and comes back as the A320, which then holds a beat and climbs out
+  tl.add(cutTheCurve(), '-=0.55');
+  tl.to(departure, { t: 1, duration: 2.8, ease: 'power2.in', onComplete: showClearance }, '+=0.35');
 }
 
 function showClearance() {
@@ -941,7 +906,7 @@ function showClearance() {
 
 document.getElementById('passAgain').addEventListener('click', () => {
   clearance.classList.remove('is-on');
-  gsap.set([form, passMain, passStub, passStamp, passCreases, passBar], { clearProps: 'all' });
+  gsap.set([form, passMain, passStub, passStamp, passBar], { clearProps: 'all' });
   form.classList.remove('is-boarding', 'is-checking', 'is-torn');
   form.reset();
   form.querySelectorAll('input, select').forEach((el) => (el.disabled = false));
@@ -949,6 +914,7 @@ document.getElementById('passAgain').addEventListener('click', () => {
   passStatus.textContent = '';
   // bring the A320 back: it flies in from far away like the opening
   departure.t = 0;
+  handoff.x = 0;
   cur.p = [-16, 7, -34];
   gsap.from(form, { y: 60, opacity: 0, duration: 0.9, ease: 'expo.out' });
 });
