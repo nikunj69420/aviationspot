@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
-import { createRadarStage, createScope } from './radar.js?v=10';
+import { createRadarStage, createScope } from './radar.js?v=11';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -94,8 +95,9 @@ renderer.toneMappingExposure = 1.05;
 const envMap = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
 
 const manager = new THREE.LoadingManager();
-const loader = new GLTFLoader(manager);   // needed before the page opens
-const lazyLoader = new GLTFLoader();      // fetched in the background afterwards
+// models are meshopt-compressed .glb files with WebP textures (see tools/compress_models.py)
+const loader = new GLTFLoader(manager).setMeshoptDecoder(MeshoptDecoder); // needed before the page opens
+const lazyLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);    // fetched in the background afterwards
 
 // Centre a glTF scene and scale its largest extent to `size`
 function normalise(root, size) {
@@ -151,7 +153,7 @@ sky.scene.add(plane);
 // engine exhaust positions in the plane's local space (nose +X), for contrails
 const EXHAUSTS = [new THREE.Vector3(0.35, -0.48, 0.7), new THREE.Vector3(0.35, -0.48, -0.7)];
 
-loader.load('assests/a320/scene_as360.gltf', (gltf) => {
+loader.load('assests/a320/a320.glb', (gltf) => {
   const model = gltf.scene;
   model.rotation.y = Math.PI / 2; // source nose points +Z
   model.traverse((o) => {
@@ -265,7 +267,8 @@ cockpit.scene.add(cabinLight);
 const cessna = new THREE.Group();
 cockpit.scene.add(cessna);
 let propeller = null;
-loader.load('assests/c182/scene.gltf', (gltf) => {
+// starts downloading straight away, but the loading screen doesn't wait for it (it's the biggest file)
+lazyLoader.load('assests/c182/c182.glb', (gltf) => {
   const m = gltf.scene;
   m.updateMatrixWorld(true);
   const prop = m.getObjectByName('Object_192');
@@ -369,7 +372,7 @@ resize();
 
 /* ---------- Lazy assets (after the page is up) ---------- */
 function loadLazy() {
-  lazyLoader.load('assests/jet_engine/scene.gltf', (gltf) => {
+  lazyLoader.load('assests/jet_engine/jet_engine.glb', (gltf) => {
     const m = gltf.scene;
     m.traverse((o) => { if (o.isMesh) o.material.envMapIntensity = 1.1; });
     PARTS.forEach(([x, y, z], i) => { partAnchors[i].position.set(x, y, z); m.add(partAnchors[i]); });
@@ -386,7 +389,7 @@ function loadLazy() {
     wrap.position.set(0.8 * s, -4.0 * s, 0.59 * s);
     turbofan.add(wrap);
   });
-  lazyLoader.load('assests/src/gulfstream_g650er/scene.gltf', (gltf) => {
+  lazyLoader.load('assests/g650/g650.glb', (gltf) => {
     const m = gltf.scene;
     m.rotation.y = -Math.PI / 2; // nose +Z in the source → fly toward -X
     m.traverse((o) => { if (o.isMesh) { o.material.roughness = 0.3; o.material.metalness = 0.2; } });

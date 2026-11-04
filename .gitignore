@@ -16,3 +16,13 @@ __pycache__/
 assests/src/jet_engine/
 assests/src/radar/
 assests/src/turbine__turbofan_engine__jet_engine/
+
+# uncompressed model sources (kept locally for tools/compress_models.py; the site loads the .glb files)
+assests/c182/scene.gltf
+assests/c182/scene.bin
+assests/c182/textures/
+assests/jet_engine/scene.gltf
+assests/jet_engine/scene.bin
+assests/jet_engine/textures/
+assests/src/gulfstream_g650er/
+bg.png

@@ -20,6 +20,14 @@ const C = {
 function splitAndPaint(mesh) {
   mesh.updateWorldMatrix(true, false);
   const geo = mesh.geometry.toNonIndexed();
+  // the .glb stores compressed (quantized) vertices; unpack to plain floats before baking the transform
+  for (const name of ['position', 'normal']) {
+    const attr = geo.getAttribute(name);
+    if (!attr || attr.array instanceof Float32Array) continue;
+    const f = new Float32Array(attr.count * 3);
+    for (let i = 0; i < attr.count; i++) f.set([attr.getX(i), attr.getY(i), attr.getZ(i)], i * 3);
+    geo.setAttribute(name, new THREE.BufferAttribute(f, 3));
+  }
   geo.applyMatrix4(mesh.matrixWorld);
   geo.computeVertexNormals();
   const pos = geo.attributes.position.array, nor = geo.attributes.normal.array;
@@ -189,7 +197,7 @@ export function createRadarStage({ envMap, loader, isSmall }) {
   starGeo.setAttribute('position', new THREE.BufferAttribute(sp, 3));
   scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ size: 0.8, color: 0xffffff, transparent: true, opacity: 0.7, depthWrite: false })));
 
-  loader.load('assests/radar/scene.gltf', (gltf) => {
+  loader.load('assests/radar/radar.glb', (gltf) => {
     let src = null;
     gltf.scene.updateMatrixWorld(true);
     gltf.scene.traverse((o) => { if (o.isMesh && !src) src = o; });

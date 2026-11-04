@@ -16,14 +16,14 @@ Then open http://localhost:5173. (`tools/serve.py` is a plain static server that
 
 - `index.html`, `style.css`, `main.js`: the page, styles and all scroll/3D logic
 - `radar.js`: the radar scene (splits and paints the radar model, rise-in/sink-out transitions) and its 2D scope
-- `assests/radar/`: radar model (untextured; coloured in code)
-- `assests/a320/`: Airbus A320 with the AviationSpot360 livery (`scene_as360.gltf`)
-- `assests/c182/`: Cessna 182 Skylane (textures downscaled for the web)
-- `assests/jet_engine/`: airliner engine with cutaway (converted for three.js)
-- `assests/src/`: Gulfstream G650ER model
+- `assests/*/*.glb`: the 3D models the site loads (meshopt-compressed, WebP textures): `a320`, `c182`, `jet_engine`, `radar`, `g650`
+- `tools/compress_models.py`: rebuilds those .glb files from the source glTFs (`python -I tools/compress_models.py`, needs Node for npx)
+- `tools/convert_jet_engine.py`: converts the jet engine's spec/gloss materials to metal/rough (run before compressing it)
 - `tools/livery.py`: repaints the A320 texture (`python -I tools/livery.py`)
 
 The early-access form isn't connected to a backend yet; nothing is sent.
+
+The page opens after ~0.7 MB (hero photo, A320, radar); the Cessna, engine and G650 stream in behind it (~6 MB). The large uncompressed sources are git-ignored and only needed to rebuild the .glb files.
 
 ## 3D model credits
 
