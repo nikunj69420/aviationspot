@@ -56,6 +56,44 @@ const measure = () => {
 ScrollTrigger.addEventListener('refresh', measure);
 measure();
 
+/* ---------- Detents: when scrolling stops near a section edge, ease the last bit into line ---------- */
+// Free scrolling stays free: this only acts once the page is at rest, only within a short range,
+// and any new wheel/touch input takes over immediately.
+const DETENT_RANGE = 0.26; // fraction of the viewport within which a resting stop gets pulled in
+const STORY_BEATS = { cockpit: [0.17, 0.44, 0.71], engine: [0.85], radar: [0.5] }; // sticky-scene beats
+let detents = [];
+function buildDetents() {
+  const H = innerHeight, max = document.documentElement.scrollHeight - H;
+  const list = [0, max];
+  document.querySelectorAll('main > section').forEach((el) => {
+    const top = el.offsetTop, h = el.offsetHeight;
+    list.push(top);
+    if (el.classList.contains('sticky-sec')) {
+      list.push(top + h - H);
+      (STORY_BEATS[el.id] || []).forEach((f) => list.push(top + f * (h - H)));
+    } else if (h > H * 1.3) list.push(top + h - H); // much taller than the screen: also rest bottom-aligned
+  });
+  detents = list.map((y) => Math.round(Math.min(max, Math.max(0, y))));
+}
+ScrollTrigger.addEventListener('refresh', buildDetents);
+let restTimer = 0, touching = false;
+function settle() {
+  if (!lenis || !started || touching) return;
+  const y = scrollY;
+  const nearest = detents.reduce((best, d) => (Math.abs(d - y) < Math.abs(best - y) ? d : best), Infinity);
+  const dist = Math.abs(nearest - y);
+  if (dist < 2 || dist > innerHeight * DETENT_RANGE) return;
+  // scrollbar drags and keys move the page without Lenis; resync its idea of where we are first
+  if (Math.abs(lenis.scroll - y) > 1) lenis.scrollTo(y, { immediate: true, force: true });
+  lenis.scrollTo(nearest, { duration: 0.5 + (dist / innerHeight) * 1.2, easing: (t) => 1 - Math.pow(1 - t, 3) });
+}
+if (lenis) {
+  // native scroll covers wheel (via Lenis), scrollbar drags, keys and touch momentum alike
+  addEventListener('scroll', () => { clearTimeout(restTimer); restTimer = setTimeout(settle, 160); }, { passive: true });
+  addEventListener('touchstart', () => { touching = true; clearTimeout(restTimer); }, { passive: true });
+  addEventListener('touchend', () => { touching = false; clearTimeout(restTimer); restTimer = setTimeout(settle, 220); }, { passive: true });
+}
+
 // Continuous position along KEYS, e.g. 2.4 = 40% of the way from pillars to engine
 function keyPosition() {
   const y = scrollY + innerHeight / 2;
@@ -601,7 +639,7 @@ manager.onLoad = () => {
   gsap.ticker.add(frame);
   gsap.to(loaderEl, {
     opacity: 0, duration: 0.8, delay: 0.2, ease: 'power2.out',
-    onComplete: () => { loaderEl.remove(); lenis?.start(); started = true; loadLazy(); },
+    onComplete: () => { loaderEl.remove(); lenis?.start(); started = true; buildDetents(); loadLazy(); },
   });
   intro();
 };
