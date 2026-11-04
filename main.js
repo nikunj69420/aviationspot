@@ -18,8 +18,7 @@ const range = (v, a, b) => smooth(clamp01((v - a) / (b - a)));
 /* ---------- Smooth scroll (Lenis driven by the GSAP ticker) ---------- */
 let lenis = null;
 if (!reduceMotion) {
-  // wheel and touch are turned into detent steps below; Lenis animates the glides
-  lenis = new Lenis({ smoothWheel: false, syncTouch: false });
+  lenis = new Lenis({ lerp: 0.085, smoothWheel: true });
   lenis.on('scroll', ScrollTrigger.update);
   gsap.ticker.add((t) => lenis.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
@@ -56,112 +55,6 @@ const measure = () => {
 };
 ScrollTrigger.addEventListener('refresh', measure);
 measure();
-
-/* ---------- Detents: one wheel flick / swipe / key press moves exactly one detent ---------- */
-// Detents are section tops, extra stops inside sections taller than the screen, and the story beats
-// inside the sticky 3D scenes. A second flick mid-glide carries on to the following detent.
-const STORY_BEATS = { cockpit: [0.17, 0.44, 0.71], engine: [0.35, 0.85], radar: [0.5] }; // sticky-scene beats
-let detents = [];
-function buildDetents() {
-  const H = innerHeight, max = document.documentElement.scrollHeight - H;
-  const list = [0, max];
-  document.querySelectorAll('main > section').forEach((el) => {
-    const top = el.offsetTop, h = el.offsetHeight;
-    list.push(top);
-    if (el.classList.contains('sticky-sec')) {
-      list.push(top + h - H);
-      (STORY_BEATS[el.id] || []).forEach((f) => list.push(top + f * (h - H)));
-    } else if (h > H * 1.3) {
-      // tall section (e.g. stacked cards on a phone): stops every ~80% of a screen, then bottom-aligned
-      for (let y = top + H * 0.8; y < top + h - H; y += H * 0.8) list.push(y);
-      list.push(top + h - H);
-    }
-  });
-  // sorted, clamped, and with near-duplicates merged so no step is a few pixels long
-  detents = list.map((y) => Math.round(Math.min(max, Math.max(0, y)))).sort((a, b) => a - b)
-    .filter((y, i, arr) => i === 0 || y - arr[i - 1] > 40);
-}
-ScrollTrigger.addEventListener('refresh', buildDetents);
-
-let gliding = false, glideTarget = null;
-const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-const easeOut = (t) => 1 - Math.pow(1 - t, 3);
-function glideTo(y) {
-  const chained = gliding; // already moving: keep the momentum instead of easing in again
-  // scrollbar drags move the page without Lenis; resync its idea of where we are first
-  if (!chained && Math.abs(lenis.scroll - scrollY) > 1) lenis.scrollTo(scrollY, { immediate: true, force: true });
-  const dist = Math.abs(y - lenis.scroll);
-  gliding = true;
-  glideTarget = y;
-  lenis.scrollTo(y, {
-    duration: Math.min(1.8, 0.85 + (dist / innerHeight) * 0.3), easing: chained ? easeOut : easeInOut, force: true,
-    onComplete: () => { gliding = false; glideTarget = null; },
-  });
-}
-function step(dir) {
-  if (!started || !detents.length) return;
-  const from = glideTarget ?? scrollY;
-  const next = dir > 0 ? detents.find((d) => d > from + 4) : [...detents].reverse().find((d) => d < from - 4);
-  if (next !== undefined) glideTo(next);
-}
-
-if (lenis) {
-  // Wheel / trackpad: one gesture = one step; a trackpad's inertia tail counts as the same gesture
-  let lastWheel = 0, gestureUsed = false;
-  addEventListener('wheel', (e) => {
-    if (e.ctrlKey) return; // pinch-zoom
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && e.target.closest?.('.departures')) return;
-    e.preventDefault();
-    const now = performance.now();
-    if (now - lastWheel > 200) gestureUsed = false;
-    lastWheel = now;
-    if (gestureUsed || Math.abs(e.deltaY) < 3) return;
-    gestureUsed = true;
-    step(Math.sign(e.deltaY));
-  }, { passive: false });
-
-  // Touch: one swipe = one step (swipe up goes forward, like scrolling down)
-  let touchY = null, touchX = null;
-  addEventListener('touchstart', (e) => { touchY = e.touches[0].clientY; touchX = e.touches[0].clientX; }, { passive: true });
-  addEventListener('touchmove', (e) => {
-    if (touchY === null) return;
-    const dx = Math.abs(e.touches[0].clientX - touchX), dy = Math.abs(e.touches[0].clientY - touchY);
-    if (dx > dy && e.target.closest?.('.departures')) return; // the board still scrolls sideways
-    e.preventDefault();
-  }, { passive: false });
-  addEventListener('touchend', (e) => {
-    if (touchY === null) return;
-    const dy = touchY - e.changedTouches[0].clientY;
-    touchY = null;
-    if (Math.abs(dy) > 30) step(Math.sign(dy));
-  });
-
-  // Keyboard
-  addEventListener('keydown', (e) => {
-    if (e.target.closest?.('input, select, textarea, button')) return;
-    const down = ['ArrowDown', 'PageDown'].includes(e.key) || (e.key === ' ' && !e.shiftKey);
-    const up = ['ArrowUp', 'PageUp'].includes(e.key) || (e.key === ' ' && e.shiftKey);
-    if (e.key === 'Home' || e.key === 'End') {
-      e.preventDefault();
-      return glideTo(e.key === 'Home' ? 0 : detents[detents.length - 1]);
-    }
-    if (!down && !up) return;
-    e.preventDefault();
-    step(down ? 1 : -1);
-  });
-
-  // Scrollbar drags: once the page is at rest, settle onto the nearest detent
-  let restTimer = 0;
-  addEventListener('scroll', () => {
-    clearTimeout(restTimer);
-    restTimer = setTimeout(() => {
-      if (gliding || !started) return;
-      const y = scrollY;
-      const nearest = detents.reduce((best, d) => (Math.abs(d - y) < Math.abs(best - y) ? d : best), Infinity);
-      if (Math.abs(nearest - y) > 2 && Math.abs(nearest - y) < innerHeight * 0.5) glideTo(nearest);
-    }, 180);
-  }, { passive: true });
-}
 
 // Continuous position along KEYS, e.g. 2.4 = 40% of the way from pillars to engine
 function keyPosition() {
@@ -708,7 +601,7 @@ manager.onLoad = () => {
   gsap.ticker.add(frame);
   gsap.to(loaderEl, {
     opacity: 0, duration: 0.8, delay: 0.2, ease: 'power2.out',
-    onComplete: () => { loaderEl.remove(); lenis?.start(); started = true; buildDetents(); loadLazy(); },
+    onComplete: () => { loaderEl.remove(); lenis?.start(); started = true; loadLazy(); },
   });
   intro();
 };
