@@ -417,6 +417,7 @@ addEventListener('pointermove', (e) => {
 });
 let started = false;
 
+const departure = { t: 0 }; // 0 = on station, 1 = gone (climbed out after boarding)
 function updateSky(dt, time, target, ease) {
   for (let i = 0; i < 3; i++) {
     cur.p[i] = lerp(cur.p[i], target.p[i], ease);
@@ -430,6 +431,13 @@ function updateSky(dt, time, target, ease) {
   plane.position.set(cur.p[0] + pointer.x * 0.4, cur.p[1] + bob - pointer.y * 0.3, cur.p[2]);
   plane.rotation.set(cur.r[0] + sway + pointer.x * 0.12, cur.r[1], cur.r[2] + bob * 0.3);
   plane.scale.setScalar(cur.s * (sky.camera.aspect < 1 ? 0.75 : 1));
+  if (departure.t > 0) {
+    const d = departure.t * departure.t;
+    plane.rotation.z += departure.t * 0.32; // pitch up into the climb
+    fwd.set(1, 0, 0).applyEuler(plane.rotation);
+    plane.position.addScaledVector(fwd, d * 70);
+    plane.position.y += d * 8;
+  }
   sky.camera.position.x = pointer.x * 0.5;
   sky.camera.position.y = -pointer.y * 0.3;
   sky.camera.lookAt(0, 0, 0);
@@ -442,7 +450,7 @@ function updateSky(dt, time, target, ease) {
 
   // contrails get thicker the higher we fly
   const k = target.i + target.t;
-  const trailVis = plane.visible ? range(k, 1.6, 2.4) * (1 - range(k, 7.4, 8)) : 0;
+  const trailVis = plane.visible ? Math.max(range(k, 1.6, 2.4) * (1 - range(k, 7.4, 8)), departure.t > 0 ? 1 : 0) : 0;
   fwd.set(1, 0, 0).applyQuaternion(plane.quaternion);
   for (let e = 0; e < 2; e++) {
     const idx = e * TRAIL + trailHead;
@@ -757,6 +765,7 @@ function tiltPass(card) {
   const rx = gsap.quickTo(card, 'rotateX', { duration: 0.8, ease: 'power3' });
   const ry = gsap.quickTo(card, 'rotateY', { duration: 0.8, ease: 'power3' });
   card.addEventListener('pointermove', (e) => {
+    if (card.classList.contains('is-boarding')) return;
     const b = card.getBoundingClientRect();
     const x = (e.clientX - b.left) / b.width, y = (e.clientY - b.top) / b.height;
     ry((x - 0.5) * 10);
@@ -769,7 +778,6 @@ function tiltPass(card) {
 }
 const form = document.getElementById('passForm');
 tiltPass(form);
-tiltPass(document.getElementById('printedPass'));
 gsap.from(form, { y: 140, rotateX: 40, opacity: 0, duration: 1.6, ease: 'expo.out', scrollTrigger: { trigger: form, start: 'top 90%' } });
 // The little plane flies the dotted arc: same quadratic curve as the SVG path (M4 36 Q100 -10 196 36
 // in a 200×40 box stretched to the arc's size), nose turned along the tangent.
@@ -790,8 +798,77 @@ gsap.to(flight, {
   },
 });
 
+// Boarding: check in → stamp → stub tears off → pass crumples → flies into the A320 → take-off
+const CHECKIN_MS = 5000; // how long "Checking in…" holds before the pass tears away
+const passMain = form.querySelector('.pass__main');
+const passStub = form.querySelector('.pass__stub');
+const passBtn = form.querySelector('.btn--stub');
+const passStatus = form.querySelector('.pass__status');
+const passStamp = form.querySelector('.pass__stamp');
+const passBar = form.querySelector('.pass__progress span');
+const passCreases = form.querySelector('.pass__creases');
+const clearance = document.getElementById('clearance');
+const BTN_LABEL = passBtn.innerHTML;
+
+// crease lines for the crumpled paper (dark fold + light ridge)
+passCreases.innerHTML = Array.from({ length: 16 }, () => {
+  const pts = Array.from({ length: 3 }, () => `${(Math.random() * 100).toFixed(1)},${(Math.random() * 100).toFixed(1)}`).join(' ');
+  return `<polyline points="${pts}" fill="none" stroke="rgba(16,28,51,.38)" stroke-width=".5"/>`
+    + `<polyline points="${pts}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width=".35" transform="translate(.6 .4)"/>`;
+}).join('');
+
+// clip-path polygons: the flat sheet, a first fold, and a paper ball (same point count so they tween)
+const N = 28;
+const poly = (pts) => `polygon(${pts.map(([x, y]) => `${x.toFixed(2)}% ${y.toFixed(2)}%`).join(', ')})`;
+function sheetPoints() {
+  return Array.from({ length: N }, (_, i) => {
+    const t = (i / N) * 4, side = Math.floor(t), f = t - side;
+    return [[f * 100, 0], [100, f * 100], [100 - f * 100, 100], [0, 100 - f * 100]][side];
+  });
+}
+function crumplePoints(aspect) {
+  const sheet = sheetPoints();
+  const jit = (a) => (Math.random() - 0.5) * a;
+  const fold = sheet.map(([x, y]) => [50 + (x - 50) * 0.8 + jit(9), 50 + (y - 50) * 0.82 + jit(12)]);
+  const ball = sheet.map((_, i) => {
+    const a = (i / N) * Math.PI * 2 - Math.PI * 0.75, r = 17 + Math.random() * 6;
+    return [50 + Math.cos(a) * r / aspect, 50 + Math.sin(a) * r];
+  });
+  return { sheet, fold, ball };
+}
+// jagged edge where the stub rips off along the perforation
+function tornEdge(el) {
+  const h = el.offsetHeight, steps = Math.round(h / 9), pts = ['100% 0', '100% 100%'];
+  for (let i = steps; i >= 0; i--) pts.push(`${i % 2 ? 0 : 7}px ${((i / steps) * 100).toFixed(1)}%`);
+  return `polygon(${pts.join(', ')})`;
+}
+function planeOnScreen() {
+  plane.updateMatrixWorld();
+  const v = plane.getWorldPosition(new THREE.Vector3()).project(sky.camera);
+  return { x: (v.x * 0.5 + 0.5) * innerWidth, y: (-v.y * 0.5 + 0.5) * innerHeight };
+}
+// toss the balled-up pass along an arc into the aircraft
+function tossToPlane(el) {
+  const r = el.getBoundingClientRect(), to = planeOnScreen();
+  const dx = to.x - (r.left + r.width / 2), dy = to.y - (r.top + r.height / 2);
+  const base = { x: gsap.getProperty(el, 'x'), y: gsap.getProperty(el, 'y'), s: gsap.getProperty(el, 'scale'), r: gsap.getProperty(el, 'rotate') };
+  const cx = dx * 0.3, cy = Math.min(dy, 0) - 180; // control point above the line: a lob, not a beeline
+  const p = { t: 0 };
+  return gsap.to(p, {
+    t: 1, duration: 1.15, ease: 'power1.in',
+    onUpdate: () => {
+      const t = p.t, u = 1 - t;
+      gsap.set(el, {
+        x: base.x + 2 * u * t * cx + t * t * dx, y: base.y + 2 * u * t * cy + t * t * dy,
+        scale: base.s * (1 - t * 0.85), rotate: base.r + t * 420, opacity: t > 0.85 ? (1 - t) / 0.15 : 1,
+      });
+    },
+  });
+}
+
 form.addEventListener('submit', (e) => {
   e.preventDefault();
+  if (form.classList.contains('is-boarding')) return;
   const data = Object.fromEntries(new FormData(form));
   const err = document.getElementById('passErr');
   if (!data.name.trim() || !/^\S+@\S+\.\S+$/.test(data.email) || !data.pathway || !data.country) {
@@ -801,19 +878,77 @@ form.addEventListener('submit', (e) => {
   }
   err.textContent = '';
   // TODO: send `data` to the registration backend once it exists.
-  document.getElementById('pName').textContent = data.name.trim();
-  document.getElementById('pPath').textContent = data.pathway;
-  document.getElementById('pCountry').textContent = data.country;
-  document.getElementById('pNo').textContent = `AS360-${String(Math.floor(Math.random() * 9000) + 1000)}`;
-  document.getElementById('pBar').innerHTML = Array.from({ length: 56 }, () =>
-    `<i style="flex:${1 + Math.floor(Math.random() * 3)};opacity:${Math.random() > 0.25 ? 1 : 0}"></i>`).join('');
+  const passNo = `AS360-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+  document.getElementById('cName').textContent = data.name.trim().split(/\s+/)[0];
+  document.getElementById('cNo').textContent = passNo;
+  board(passNo);
+});
 
-  const printed = document.getElementById('printed');
-  gsap.timeline()
-    .to(form, { rotateX: -70, y: 80, opacity: 0, duration: 0.6, ease: 'power3.in' })
-    .add(() => { form.style.display = 'none'; printed.style.display = 'block'; ScrollTrigger.refresh(); })
-    .fromTo('#printedPass', { clipPath: 'inset(0 0 100% 0)', y: -50, rotateZ: -2 },
-      { clipPath: 'inset(0 0 0% 0)', y: 0, rotateZ: 0, duration: 1.6, ease: 'steps(16)' })
-    .to('#printedPass', { rotateZ: 1.5, duration: 1, ease: 'elastic.out(1, 0.4)' })
-    .from('.printed .note', { opacity: 0, y: 10, duration: 0.6 }, '-=0.6');
+function board(passNo) {
+  form.classList.add('is-boarding', 'is-checking');
+  form.querySelectorAll('input, select').forEach((el) => (el.disabled = true));
+  passBtn.innerHTML = '<span class="spin" aria-hidden="true"></span>Checking in…';
+  gsap.to(form, { rotateX: 0, rotateY: 0, duration: 0.4 });
+
+  const secs = CHECKIN_MS / 1000;
+  const tl = gsap.timeline();
+  tl.to(passBar, { scaleX: 1, duration: secs, ease: 'none' }, 0);
+  ['Verifying passenger', 'Assigning seat 1A', 'Printing boarding pass'].forEach((s, i, all) =>
+    tl.call(() => (passStatus.textContent = s), null, (i * secs) / all.length));
+  tl.add(() => {
+    form.classList.remove('is-checking');
+    passBtn.textContent = 'Boarded';
+    passStatus.textContent = `Pass ${passNo}`;
+  }, secs);
+  // CHECKED IN stamp lands with a thud
+  tl.fromTo(passStamp, { scale: 2.6, opacity: 0, rotate: -28 }, { scale: 1, opacity: 0.92, rotate: -12, duration: 0.32, ease: 'power4.in' });
+  tl.to(form, { y: 3, duration: 0.05, yoyo: true, repeat: 3, ease: 'none' });
+
+  if (reduceMotion) {
+    tl.add(showClearance, '+=0.8');
+    return;
+  }
+  // the stub rips along the perforation and falls away
+  const wide = innerWidth > 600;
+  tl.add(() => {
+    form.classList.add('is-torn');
+    if (wide) passStub.style.clipPath = tornEdge(passStub);
+  }, '+=0.7');
+  tl.to(passStub, { x: wide ? 10 : 0, y: wide ? 0 : 10, rotate: wide ? 3 : -2, duration: 0.14, ease: 'power2.out' });
+  tl.to(passStub, { x: wide ? 70 : 30, y: 320, rotate: wide ? 26 : -18, opacity: 0, duration: 1, ease: 'power2.in', transformOrigin: 'top left' });
+
+  // the pass creases, folds and balls up
+  tl.add(() => {
+    const { sheet, fold, ball } = crumplePoints(passMain.offsetWidth / passMain.offsetHeight);
+    gsap.timeline()
+      .set(passMain, { clipPath: poly(sheet), transformOrigin: '50% 50%' })
+      .to(passCreases, { opacity: 1, duration: 0.45 })
+      .to(passMain, { clipPath: poly(fold), scale: 0.9, rotate: -7, skewX: 5, duration: 0.4, ease: 'power2.in' }, '<')
+      // outline eases straight in (an overshooting ease would fold it inside out); the body gets the wind-up
+      .to(passMain, { clipPath: poly(ball), duration: 0.5, ease: 'power2.in' })
+      .to(passMain, { scale: 0.5, rotate: 26, skewX: 0, filter: 'brightness(.9) drop-shadow(0 12px 14px rgba(0,0,0,.45))', duration: 0.5, ease: 'back.in(1.6)' }, '<')
+      .add(() => tossToPlane(passMain), '+=0.15')
+      .add(() => gsap.to(departure, { t: 1, duration: 2.8, ease: 'power2.in', onComplete: showClearance }), '+=1.2');
+  }, '-=0.5');
+}
+
+function showClearance() {
+  form.style.display = 'none';
+  clearance.classList.add('is-on');
+  ScrollTrigger.refresh();
+  gsap.from(clearance.children, { y: 40, opacity: 0, duration: 1, stagger: 0.1, ease: 'expo.out' });
+}
+
+document.getElementById('passAgain').addEventListener('click', () => {
+  clearance.classList.remove('is-on');
+  gsap.set([form, passMain, passStub, passStamp, passCreases, passBar], { clearProps: 'all' });
+  form.classList.remove('is-boarding', 'is-checking', 'is-torn');
+  form.reset();
+  form.querySelectorAll('input, select').forEach((el) => (el.disabled = false));
+  passBtn.innerHTML = BTN_LABEL;
+  passStatus.textContent = '';
+  // bring the A320 back: it flies in from far away like the opening
+  departure.t = 0;
+  cur.p = [-16, 7, -34];
+  gsap.from(form, { y: 60, opacity: 0, duration: 0.9, ease: 'expo.out' });
 });
