@@ -58,7 +58,8 @@ const measure = () => {
   const H = innerHeight;
   spans = sections.map((el) => {
     const top = el.offsetTop, h = el.offsetHeight;
-    return el.classList.contains('sticky-sec') ? [top + H / 2, top + h - H / 2] : [top + h / 2, top + h / 2];
+    // pinned sections and long reading sections (data-hold) keep their scene from edge to edge
+    return el.classList.contains('sticky-sec') || el.hasAttribute('data-hold') ? [top + H / 2, top + h - H / 2] : [top + h / 2, top + h / 2];
   });
   spans[0] = [H / 2, Math.max(H / 2, spans[0][1])];
   const end = document.documentElement.scrollHeight - H / 2;
@@ -494,8 +495,8 @@ function updateSky(dt, time, target, ease) {
   flareLight.intensity = 1;
   flare.visible = k < 0.9 || k > 8.5;
 
-  // G650 crosses right → left behind the flight log
-  const jt = clamp01((k - 5.45) / 1.3);
+  // G650 crosses right → left as the flight log hands over to the impact section
+  const jt = clamp01((k - 6) / 1);
   jet.visible = jet.children.length > 0 && jt > 0 && jt < 1;
   if (jet.visible) {
     jet.position.set(lerp(13, -13, jt), lerp(-3.4, -1.6, jt) + Math.sin(time) * 0.05, -6);
@@ -562,7 +563,7 @@ const RADAR_K = KEYS.findIndex((key) => key.stage === 'radar');
 function updateRadar(dt, time, k) {
   const p = stickyProgress(radarSec);
   // 0 → 1 as the radar arrives and back to 0 as it leaves (the stage swaps in at RADAR_K ± 0.5)
-  const presence = Math.min(range(k, RADAR_K - 0.5, RADAR_K - 0.3), 1 - range(k, RADAR_K + 0.3, RADAR_K + 0.5));
+  const presence = Math.min(range(k, RADAR_K - 0.5, RADAR_K - 0.3), 1 - range(k, RADAR_K + 0.02, RADAR_K + 0.3)); // sinks away as soon as the flight log scrolls in
   radar.update({ p, dt, time, pointer, reduceMotion, presence });
   radarCopy.style.opacity = presence;
   radarCopy.style.transform = `translateY(${(1 - presence) * 40}px)`;
