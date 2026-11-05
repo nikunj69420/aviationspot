@@ -60,7 +60,11 @@ main > *, .footer { position: relative; z-index: 2; }
 
 /* ---------- Shared ---------- */
 section { min-height: 100vh; padding: 18vh clamp(20px, 6vw, 96px); max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; }
-.eyebrow { display: inline-flex; align-items: center; gap: 10px; font: 600 12px var(--serif); letter-spacing: .32em; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; }
+/* section labels: a cyan number badge, a short rule, then the name in bold tracked caps */
+.eyebrow { display: inline-flex; align-items: center; gap: 12px; font: 700 12.5px var(--font); letter-spacing: .2em; text-transform: uppercase; color: #a8e2fa; margin-bottom: 22px; text-shadow: 0 1px 12px rgba(4, 12, 40, .45); }
+.eyebrow__n { font: 700 11px/1 var(--mono); letter-spacing: .04em; color: #04102e; background: var(--accent); padding: 5px 7px 4px; border-radius: 6px; text-shadow: none; box-shadow: 0 0 18px rgba(0,162,229,.45); }
+.eyebrow__t { display: inline-flex; align-items: center; gap: 12px; }
+.eyebrow__n + .eyebrow__t::before { content: ""; width: 26px; height: 1.5px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), rgba(0,162,229,.2)); }
 h2 { font-weight: 800; font-size: clamp(42px, 6.4vw, 92px); line-height: .98; letter-spacing: -.04em; margin-bottom: 44px; filter: drop-shadow(0 6px 30px rgba(4, 12, 30, .35)); font-variation-settings: "wdth" 92; }
 h3 { font: 800 21px/1.25 var(--font); margin-bottom: 8px; }
 .note { color: var(--dim); font-size: 15px; margin-top: 22px; }

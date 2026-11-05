@@ -728,6 +728,12 @@ gsap.timeline({ scrollTrigger: { trigger: '.hero', start: 'top top', end: 'botto
   .to('.hero__content', { y: -140, opacity: 0, ease: 'none' }, 0)
   .to('.hero__scroll', { opacity: 0, ease: 'none', duration: 0.3 }, 0);
 
+// Section labels like "04 · Above the clouds": the number becomes a badge before the name
+document.querySelectorAll('.eyebrow').forEach((el) => {
+  const m = el.childElementCount === 0 && el.textContent.trim().match(/^(\d{2})\s*·\s*(.+)$/);
+  if (m) el.innerHTML = `<span class="eyebrow__n">${m[1]}</span><span class="eyebrow__t">${m[2]}</span>`;
+});
+
 // Headings and cards
 gsap.utils.toArray('.reveal, section:not(.hero):not(.sticky-sec) .eyebrow').forEach((el) =>
   gsap.from(el, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%' } })
