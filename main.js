@@ -308,15 +308,12 @@ lazyLoader.load('assests/a320_cockpit/a320_cockpit.glb?v=3', (gltf) => {
 
 // camera beats from the captain's seat: [progress, eye, target]
 const CP_PATH = [
-  [0.0, [-3.2, 0.3, -7.6], [-3.3, -0.15, -10.5]],  // nose-to-glass with the captain's PFD and ND
-  [0.18, [-3.0, 0.45, -7.2], [-2.9, -0.1, -10.5]],
-  [0.4, [-2.6, 1.2, -4.8], [-1.2, -0.4, -10.5]],   // back into the seat: the whole panel
-  [0.55, [-2.6, 1.2, -4.9], [0.2, -1.6, -9.5]],    // across to the thrust levers
-  [0.7, [-2.4, 1.3, -5.0], [-0.5, 3.5, -6.5]],     // up to the overhead panel
-  [0.8, [-2.4, 1.3, -5.2], [-1.5, 2.2, -20]],      // look out through the windshield
-  [0.88, [-1.8, 2.8, -14], [-1.5, 2.8, -40]],      // and fly out through the glass...
+  [0.0, [-2.4, 1.3, -5.0], [-0.6, 3.5, -6.4]],     // straight up to the overhead panel from the captain's seat
+  [0.45, [-2.3, 1.25, -5.2], [0.4, 3.6, -7.4]],    // drifting slowly across it
+  [0.62, [-2.4, 1.3, -5.2], [-1.5, 2.2, -20]],     // then look out through the windshield
+  [0.76, [-1.8, 2.8, -14], [-1.5, 2.8, -40]],      // and fly out through the glass...
   [1.0, [-36, 9, -66], [-5, 0, -14]],              // ...swinging round to look back at the AviationSpot360 nose
-];
+]
 const cpEye = new THREE.Vector3(), cpTarget = new THREE.Vector3();
 function cockpitPose(p) {
   let i = 0;
@@ -511,9 +508,9 @@ function updateCockpit() {
   const p = stickyProgress(cockpitSec);
   cockpitPose(p);
   // outside the glass: show the airliner's skin and bring the daylight up
-  const out = range(p, 0.84, 0.94);
-  cockpitExterior.visible = p > 0.8;
-  flightDeck.visible = p < 0.87; // its shell is bigger than the airliner's nose, so it goes once we're through the glass
+  const out = range(p, 0.72, 0.84);
+  cockpitExterior.visible = p > 0.66;
+  flightDeck.visible = p < 0.75; // its shell is bigger than the airliner's nose, so it goes once we're through the glass
   cpHemi.intensity = lerp(0.35, 1.2, out);
   cpKey.intensity = lerp(1.3, 2.8, out);
   const cam = cockpit.camera;
@@ -523,9 +520,9 @@ function updateCockpit() {
   // portrait screens: widen the lens so the panel still fits from the seat
   const fov = cam.aspect < 1 ? 68 : 46;
   if (cam.fov !== fov) { cam.fov = fov; cam.updateProjectionMatrix(); }
-  // one line, up from the moment we're in the seat until the camera flies out through the windshield
+  // one line over the overhead panel, from the moment we're in the seat until we look out of the windshield
   lines.forEach((l) => {
-    const v = range(p, 0, 0.05) * (1 - range(p, 0.8, 0.86));
+    const v = range(p, 0, 0.05) * (1 - range(p, 0.56, 0.62));
     l.style.opacity = v;
     l.style.transform = `translateY(${(1 - v) * 30}px)`;
   });
