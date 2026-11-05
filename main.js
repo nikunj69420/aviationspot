@@ -161,7 +161,7 @@ sky.scene.add(plane);
 // engine exhaust positions in the plane's local space (nose +X), for contrails
 const EXHAUSTS = [new THREE.Vector3(0.35, -0.48, 0.7), new THREE.Vector3(0.35, -0.48, -0.7)];
 
-loader.load('assests/a320/a320.glb', (gltf) => {
+loader.load('assests/a320/a320.glb?v=2', (gltf) => {
   const model = gltf.scene;
   model.rotation.y = Math.PI / 2; // source nose points +Z
   model.traverse((o) => {

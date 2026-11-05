@@ -2,6 +2,7 @@
 
 Run: python -I tools/livery.py
 Reads  assests/a320/textures/material02_baseColor.jpeg (original paint kit)
+       brand/livery-title.png, brand/livery-emblem.png (logo renders: node tools/render_logo.mjs)
 Writes assests/a320/textures/as360_livery.jpg
 """
 import math
@@ -88,11 +89,13 @@ for wy in (193, 452):  # window row centres (mirrored top half, bottom half)
 
 luma = img @ np.array([0.299, 0.587, 0.114])  # refresh after the clean-up above
 
-# 2. Belly: navy lower fuselage with an amber pinstripe, sweeping up toward the tail
+# 2. Belly: navy lower fuselage edged by a cyan ribbon that waves like the swoosh in the logo,
+#    then sweeps up toward the tail
 def belly_top(v):
     """Offset below the crown where the navy starts, along the virtual fuselage (0..2684)."""
     t = np.clip((v - 1500) / 1100, 0, 1)
-    return 205 - 95 * t * t
+    wave = 16 * np.sin(np.clip((v - 700) / 1400, 0, 1) * 2 * np.pi)  # one S-curve along the cabin
+    return 205 - 95 * t * t - wave
 
 
 for strip, crown, x_start, v_off in ((FRONT, CROWN_F, 0, 0), (REAR, CROWN_R, 178, 1314)):
@@ -107,7 +110,7 @@ for strip, crown, x_start, v_off in ((FRONT, CROWN_F, 0, 0), (REAR, CROWN_R, 178
             col = img[ys, x]
             fuselage = (luma[ys, x] > 120) & (np.abs(col[:, 2] - col[:, 0]) < 22)
             nav = (offs >= top) & fuselage
-            stripe = (offs >= top - 14) & (offs < top - 6) & fuselage
+            stripe = (offs >= top - 17) & (offs < top - 5) & fuselage
             if nav.any():
                 shade = np.clip(luma[ys[nav], x] / 235, 0.4, 1.1)[:, None]
                 img[ys[nav], x] = NAVY * shade
@@ -128,7 +131,11 @@ tint(nac, NAVY, 230)
 out = Image.fromarray(img.astype(np.uint8))
 draw = ImageDraw.Draw(out)
 
-# 5. Fins: fill the old "A320" lettering and paint "360"
+# 5. Fins: fill the old "A320" lettering and paint the logo emblem (tower, radar waves, 360)
+# rendered from brand/logo-white.svg by tools/render_logo.mjs; a corner of the next letter is cut out
+EMBLEM = Image.open(ROOT / "brand/livery-emblem.png").convert("RGBA")
+ImageDraw.Draw(EMBLEM).rectangle((int(EMBLEM.width * 0.82), int(EMBLEM.height * 0.86), EMBLEM.width, EMBLEM.height), fill=(0, 0, 0, 0))
+EMBLEM = EMBLEM.resize((250, round(250 * EMBLEM.height / EMBLEM.width)), Image.LANCZOS)
 for region, centre, angle in ((FIN_L, (191, 1844), -50), (FIN_R, (1876, 1844), 52)):
     # the navy band is convex: fill its hull to wipe out the old "A320" letters inside it
     m = np.zeros((H, W), bool)
@@ -144,30 +151,15 @@ for region, centre, angle in ((FIN_L, (191, 1844), -50), (FIN_R, (1876, 1844), 5
     arr[band & ~stripes] = NAVY * 0.95
     out = Image.fromarray(arr.astype(np.uint8))
     draw = ImageDraw.Draw(out)
-    font = ImageFont.truetype(FONT, 118)
-    layer = Image.new("RGBA", (520, 200), (0, 0, 0, 0))
-    ld = ImageDraw.Draw(layer)
-    ld.text((260, 100), "360", font=font, fill=(255, 255, 255, 255), anchor="mm")
-    layer = layer.rotate(angle, resample=Image.BICUBIC, expand=True)
+    layer = EMBLEM.rotate(angle, resample=Image.BICUBIC, expand=True)
     out.paste(layer, (centre[0] - layer.width // 2, centre[1] - layer.height // 2), layer)
 
-# 6. Titles: "AviationSpot360" above the windows, both sides (top half is rotated 180°)
-def title_layer():
-    font = ImageFont.truetype(FONT, 82)
-    w = 900
-    layer = Image.new("RGBA", (w, 120), (0, 0, 0, 0))
-    ld = ImageDraw.Draw(layer)
-    a, b = "AviationSpot", "360"
-    wa = ld.textlength(a, font=font)
-    wb = ld.textlength(b, font=font)
-    x = (w - wa - wb) / 2
-    ld.text((x, 60), a, font=font, fill=(17, 28, 68, 255), anchor="lm")
-    ld.text((x + wa, 60), b, font=font, fill=(0, 162, 229, 255), anchor="lm")
-    return layer
-
-
-t = title_layer()
-cx, off = 790, 60  # centre x on the forward fuselage, offset below crown
+# 6. Titles: the official logo (wordmark, radar "o", tower and 360) above the windows on both sides
+#    (the top half is the other side, its UV island rotated 180°). Rendered by tools/render_logo.mjs.
+t = Image.open(ROOT / "brand/livery-title.png").convert("RGBA")
+TITLE_H = 116  # fits between the crown and the window line
+t = t.resize((round(TITLE_H * t.width / t.height), TITLE_H), Image.LANCZOS)
+cx, off = 760, 66  # centre x on the forward fuselage, offset below crown
 out.paste(t, (cx - t.width // 2, CROWN_F + off - t.height // 2), t)
 tm = t.transpose(Image.ROTATE_180)  # the other side's UV island is rotated 180°
 out.paste(tm, (cx - t.width // 2, CROWN_F - off - t.height // 2), tm)
