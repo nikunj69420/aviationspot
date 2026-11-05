@@ -1,0 +1,11 @@
+Model Information:
+* title:	Pilot Headphones
+* source:	https://sketchfab.com/3d-models/pilot-headphones-118def0b43c14aae82a7d6d92bbd287b
+* author:	valerij1987 (https://sketchfab.com/valerij1987)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Pilot Headphones" (https://sketchfab.com/3d-models/pilot-headphones-118def0b43c14aae82a7d6d92bbd287b) by valerij1987 (https://sketchfab.com/valerij1987) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -29,7 +29,9 @@ MODELS = [
     ("assests/src/gulfstream_g650er/scene.gltf", "assests/g650/g650.glb", {"*": 1024},
      ["--simplify-ratio", "0.2", "--simplify-error", "0.002"]),
     ("assests/a320/scene_as360.gltf", "assests/a320/a320.glb", {"*": 2048}, ["--simplify", "false"]),
-    ("assests/radar/scene.gltf", "assests/radar/radar.glb", {"*": 1024}, ["--simplify", "false"]),
+    # the pilot headset, seen close up: the painted ear cups keep 2048 px, the mesh loses half its triangles
+    ("assests/headphones/scene_as360.gltf", "assests/headphones/headphones.glb", {"normal": 512, "metallicRoughness": 512, "as360_metal": 2048, "*": 1024},
+     ["--simplify-ratio", "0.5", "--simplify-error", "0.0005"]),
 ]
 # materials to strip before compressing, per output (none needed at the moment)
 DROP: dict = {}
@@ -79,7 +81,7 @@ def webp_pass(src: Path, work: Path, sizes: dict, drop: set) -> Path:
     return out
 
 
-# optional args: only rebuild the listed outputs, e.g. assests/radar/radar.glb
+# optional args: only rebuild the listed outputs, e.g. assests/a320/a320.glb
 for src_rel, out_rel, sizes, flags in [m for m in MODELS if len(sys.argv) < 2 or m[1] in sys.argv[1:]]:
     src, out = ROOT / src_rel, ROOT / out_rel
     out.parent.mkdir(parents=True, exist_ok=True)

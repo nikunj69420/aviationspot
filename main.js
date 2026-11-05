@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
-import { createRadarStage } from './radar.js?v=13';
+import { createHeadsetStage } from './headset.js?v=2';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -42,7 +42,7 @@ const KEYS = [
   { stage: 'sky', p: [1.2, 1.8, -10], r: [0.25, 1.1, 0.12], s: 1, cy: -3.2, alt: 5000, sky: ['#2a63b4', '#6aa3dc', '#d6e8f6'] },
   { stage: 'engine', p: [3.8, 0.4, -2], r: [-0.3, -0.5, 0.06], s: 1, cy: -4, alt: 8000, sky: ['#040a17', '#0a1830', '#13284d'] },
   { stage: 'sky', p: [3.5, 0.2, -1.5], r: [-0.08, -0.32, 0.04], s: 1.1, cy: -4.5, alt: 10000, sky: ['#12397a', '#3f7ccb', '#a9cdee'] },
-  { stage: 'radar', p: [9, 6, -14], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -7, alt: 14000, sky: ['#0a1230', '#2b2c55', '#b8684a'] },
+  { stage: 'headset', p: [9, 6, -14], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -7, alt: 14000, sky: ['#0a1230', '#2b2c55', '#b8684a'] },
   // story + impact: the A320 climbs out of frame so the reading sections stay clean
   { stage: 'sky', pm: [0, 18, -30], p: [-4, 15, -30], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -6.5, alt: 18000, sky: ['#0a2456', '#23559e', '#6f9fd6'] },
   { stage: 'sky', pm: [0, 18, -30], p: [4, 15, -30], r: [0.18, -0.4, 0.06], s: 1, cy: -9.5, alt: 24000, sky: ['#0a1d48', '#2c4f8f', '#9a9fc4'] },
@@ -182,6 +182,7 @@ loader.load('assests/a320/a320.glb?v=2', (gltf) => {
   wrap.add(model);
   normalise(wrap, 4.6);
   plane.add(wrap);
+  miniRoll.add(wrap.clone()); // the flight log's top-down aircraft shares the geometry and livery
   plane.visible = true;
 });
 
@@ -365,10 +366,10 @@ const flow = new THREE.Points(flowGeo, new THREE.PointsMaterial({
 }));
 engine.scene.add(flow);
 
-/* Stage 4: RADAR — surveillance radar on its mast at dusk (see radar.js) */
-const radar = createRadarStage({ envMap, loader, isSmall });
+/* Stage 4: HEADSET — the AviationSpot360 pilot headset, where the story begins (see headset.js) */
+const headset = createHeadsetStage({ envMap, loader: lazyLoader });
 
-const stages = { sky, cockpit, engine, radar };
+const stages = { sky, cockpit, engine, headset };
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
@@ -384,6 +385,7 @@ resize();
 
 /* ---------- Lazy assets (after the page is up) ---------- */
 function loadLazy() {
+  headset.load();
   lazyLoader.load('assests/jet_engine/jet_engine.glb', (gltf) => {
     const m = gltf.scene;
     m.traverse((o) => { if (o.isMesh) o.material.envMapIntensity = 1.1; });
@@ -557,17 +559,108 @@ function updateEngine(dt) {
   });
 }
 
-const radarSec = document.getElementById('radar');
-const radarCopy = radarSec.querySelector('.radar__copy');
-const RADAR_K = KEYS.findIndex((key) => key.stage === 'radar');
-function updateRadar(dt, time, k) {
-  const p = stickyProgress(radarSec);
-  // 0 → 1 as the radar arrives and back to 0 as it leaves (the stage swaps in at RADAR_K ± 0.5)
-  const presence = Math.min(range(k, RADAR_K - 0.5, RADAR_K - 0.3), 1 - range(k, RADAR_K + 0.02, RADAR_K + 0.3)); // sinks away as soon as the flight log scrolls in
-  radar.update({ p, dt, time, pointer, reduceMotion, presence });
-  radarCopy.style.opacity = presence;
-  radarCopy.style.transform = `translateY(${(1 - presence) * 40}px)`;
+// The first transmission: tune from ground to tower, the tower's take-off clearance types out over the radio,
+// then our read-back. Everything follows the scroll, so scrolling back rewinds the call.
+const txSec = document.getElementById('transmission');
+const txFade = [txSec.querySelector('.tx__copy'), document.getElementById('atc')];
+const HEADSET_K = KEYS.findIndex((key) => key.stage === 'headset');
+const freqActive = document.getElementById('freqActive');
+const freqStby = document.getElementById('freqStby');
+const freqTag = document.getElementById('freqTag');
+const radioRx = document.getElementById('radioRx');
+const radioTx = document.getElementById('radioTx');
+const atcClear = document.getElementById('atcClear');
+const meterBars = [...document.querySelectorAll('#radioMeter i')];
+const atcMsgs = [...document.querySelectorAll('.atc__msg')].map((el) => {
+  const p = el.querySelector('p');
+  const m = { el, p, text: p.textContent, from: +el.dataset.from, to: +el.dataset.to, shown: -1, us: el.classList.contains('atc__msg--us') };
+  p.textContent = '';
+  return m;
+});
+const khz = (v) => (Math.round(v * 40) / 40).toFixed(3); // 25 kHz channel steps
+let talkLevel = 0;
+function updateHeadset(dt, time, k) {
+  const p = stickyProgress(txSec);
+  const presence = Math.min(range(k, HEADSET_K - 0.5, HEADSET_K - 0.3), 1 - range(k, HEADSET_K + 0.02, HEADSET_K + 0.3));
+  const tune = range(p, 0.03, 0.14);
+  freqActive.textContent = khz(lerp(121.9, 118.1, tune));
+  freqStby.textContent = khz(lerp(118.1, 121.9, tune));
+  freqTag.textContent = tune < 0.5 ? 'GND' : 'TWR';
+  let who = null;
+  for (const m of atcMsgs) {
+    const t = clamp01((p - m.from) / (m.to - m.from));
+    const n = reduceMotion ? (t > 0 ? m.text.length : 0) : Math.round(t * m.text.length);
+    if (n !== m.shown) { m.p.textContent = m.text.slice(0, n); m.shown = n; }
+    m.el.classList.toggle('show', p > m.from - 0.03);
+    const typing = t > 0 && t < 1;
+    m.el.classList.toggle('typing', typing);
+    if (typing) who = m.us ? 'tx' : 'rx';
+  }
+  radioRx.classList.toggle('on', who === 'rx');
+  radioTx.classList.toggle('on', who === 'tx');
+  atcClear.classList.toggle('show', p > 0.78);
+  talkLevel = lerp(talkLevel, who ? 1 : 0, 1 - Math.exp(-dt * 8));
+  meterBars.forEach((bar, i) => {
+    const voice = Math.abs(Math.sin(time * 11 + i * 1.7) * Math.sin(time * 6.3 + i * 0.63));
+    const idle = 0.05 + 0.05 * Math.abs(Math.sin(time * 1.8 + i));
+    bar.style.transform = `scaleY(${(idle + talkLevel * voice * 0.9).toFixed(3)})`;
+  });
+  headset.update({ p, dt, time, pointer, reduceMotion, presence, talk: talkLevel });
+  for (const el of txFade) {
+    el.style.opacity = presence;
+    el.style.transform = `translateY(${(1 - presence) * 40}px)`;
+  }
 }
+
+/* ---------- Flight log aircraft: a small A320 seen from above that flies in and follows the rail ---------- */
+const mini = { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(28, 1, 0.1, 60) };
+mini.scene.environment = envMap;
+mini.scene.add(new THREE.HemisphereLight(0xffffff, 0x223355, 1.1));
+const miniSun = new THREE.DirectionalLight(0xffffff, 2.2);
+miniSun.position.set(-3, 8, -2);
+mini.scene.add(miniSun);
+mini.camera.up.set(0, 0, -1); // screen up = -Z, so screen right = +X and screen down = +Z
+mini.camera.position.set(0, 14, 0);
+mini.camera.lookAt(0, 0, 0);
+const miniYaw = new THREE.Group();
+const miniRoll = new THREE.Group();
+miniYaw.add(miniRoll);
+mini.scene.add(miniYaw);
+const logEl = document.getElementById('log');
+const logRail = document.querySelector('.log__rail');
+const MINI = 150; // css px box the aircraft is drawn in
+let miniHeading = 0;
+function drawMiniPlane(dt, time) {
+  if (!miniRoll.children.length || !railST || !entryST) return;
+  const r = logEl.getBoundingClientRect();
+  if (r.bottom < -MINI || r.top > innerHeight + MINI) return;
+  const en = smooth(entryST.progress);                      // 0 = off the left edge, 1 = on the rail
+  const ax = r.left + 12;
+  const ay = r.top + 10 + railST.progress * logRail.offsetHeight;
+  const vel = lenis ? lenis.velocity : 0;
+  const weave = reduceMotion ? 0 : Math.sin(time * 1.3);
+  const x = lerp(-MINI, ax, en) + weave * 3 * en;
+  const y = ay - (1 - en) * 60;
+  // heading: flying right while it comes in, turning down the rail, and back up it when scrolling up
+  const turn = range(en, 0.55, 1);
+  const along = vel < -0.4 ? Math.PI / 2 : -Math.PI / 2;
+  const target = lerp(-0.25, along, turn);
+  miniHeading = lerp(miniHeading, target, 1 - Math.exp(-dt * 5));
+  miniYaw.rotation.y = miniHeading + weave * 0.05 * en;
+  miniRoll.rotation.x = Math.sin(turn * Math.PI) * 0.55 + gsap.utils.clamp(-0.45, 0.45, vel * 0.03) + weave * 0.06;
+  const left = Math.round(x - MINI / 2), bottom = Math.round(innerHeight - y - MINI / 2);
+  if (left > innerWidth || left + MINI < 0 || bottom > innerHeight || bottom + MINI < 0) return;
+  renderer.autoClear = false;
+  renderer.setScissorTest(true);
+  renderer.setScissor(left, bottom, MINI, MINI);
+  renderer.setViewport(left, bottom, MINI, MINI);
+  renderer.clearDepth();
+  renderer.render(mini.scene, mini.camera);
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, innerWidth, innerHeight);
+  renderer.autoClear = true;
+}
+let railST = null, entryST = null; // set up with the flight log below
 
 function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -580,7 +673,7 @@ function frame() {
   // flash between stages: white like punching through cloud, dark into the engine
   const flash = A.stage !== B.stage ? clamp01(1 - Math.abs(t - 0.5) * 7) : 0;
   faderEl.style.opacity = flash;
-  faderEl.style.background = [A.stage, B.stage].some((st) => st === 'engine' || st === 'radar')
+  faderEl.style.background = [A.stage, B.stage].some((st) => st === 'engine' || st === 'headset')
     ? 'radial-gradient(circle, #13284d, #040a17)' : '';
 
   const [top, mid, bot] = target.sky;
@@ -591,12 +684,13 @@ function frame() {
 
   updateSky(dt, time, target, ease); // always runs so the A320 keeps its place
   if (stage === 'cockpit') updateCockpit(dt);
-  if (stage === 'radar') updateRadar(dt, time, target.i + target.t);
+  if (stage === 'headset') updateHeadset(dt, time, target.i + target.t);
   if (stage === 'engine') updateEngine(dt);
   else labels.forEach((el) => (el.style.opacity = 0));
 
   const st = stages[stage];
   renderer.render(st.scene, st.camera);
+  drawMiniPlane(dt, time);
 }
 
 /* ---------- Loader → intro ---------- */
@@ -735,7 +829,8 @@ gsap.from(panelEl, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollT
 // Flight log: the rail fills as you read, and the leg in the middle of the screen lights up
 const logItems = [...document.querySelectorAll('.log__item')];
 const logNo = document.getElementById('logNo');
-gsap.to('#logRail', { scaleY: 1, ease: 'none', scrollTrigger: { trigger: '#log', start: 'top 60%', end: 'bottom 60%', scrub: true } });
+railST = gsap.to('#logRail', { scaleY: 1, ease: 'none', scrollTrigger: { trigger: '#log', start: 'top 60%', end: 'bottom 60%', scrub: true } }).scrollTrigger;
+entryST = ScrollTrigger.create({ trigger: '#log', start: 'top bottom', end: 'top 60%' }); // the aircraft flies in from the side
 logItems.forEach((item, i) => {
   ScrollTrigger.create({
     trigger: item, start: 'top 62%', end: 'bottom 62%',
