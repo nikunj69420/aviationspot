@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
-import { createRadarStage, createScope } from './radar.js?v=11';
+import { createRadarStage, createScope } from './radar.js?v=12';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -332,7 +332,7 @@ engine.scene.add(new THREE.HemisphereLight(0xbcd8ff, 0x0a1020, 0.7));
 const enKey = new THREE.DirectionalLight(0xffffff, 2.2);
 enKey.position.set(-4, 6, 5);
 engine.scene.add(enKey);
-const rimA = new THREE.PointLight(0xc8a46a, 40, 16);
+const rimA = new THREE.PointLight(0x00a2e5, 40, 16);
 rimA.position.set(4, 3, -4);
 const rimB = new THREE.PointLight(0x7fb8ff, 30, 16);
 rimB.position.set(-5, -2, 3);
@@ -605,7 +605,7 @@ const loaderEl = document.getElementById('loader');
 manager.onProgress = (_, loaded, total) => {
   const pct = Math.round((loaded / total) * 100);
   document.getElementById('loaderPct').textContent = `${pct}%`;
-  document.getElementById('loaderRing').style.strokeDasharray = `${pct} 100`;
+  document.getElementById('loaderBar').style.transform = `scaleX(${pct / 100})`;
 };
 manager.onError = (url) => console.error('failed to load', url);
 manager.onLoad = () => {
@@ -618,26 +618,18 @@ manager.onLoad = () => {
 };
 
 /* ---------- DOM motion ---------- */
-function splitWords(el) {
-  el.innerHTML = el.textContent.trim().split(/\s+/)
-    .map((w) => `<span class="w"><span>${w}</span></span>`).join(' ');
-  return el.querySelectorAll('.w > span');
-}
-const heroWords = splitWords(document.getElementById('heroTag'));
-gsap.set(heroWords, { yPercent: 115 });
-gsap.set('.hero .eyebrow, .hero__brand, .hero .lede, .hero__cta', { y: 30, opacity: 0 });
-gsap.set('#heroBack span', { opacity: 0, scale: 0.9 });
+// the logo wipes in left to right, then the copy rises in
+gsap.set('.hero__logo', { clipPath: 'inset(0 100% 0 0)', y: 16 });
+gsap.set('.hero .eyebrow, .hero .lede, .hero__cta', { y: 30, opacity: 0 });
 function intro() {
   const tl = gsap.timeline({ delay: 0.5 });
-  tl.to(heroWords, { yPercent: 0, duration: 1.4, stagger: 0.09, ease: 'expo.out' })
-    .to('.hero .eyebrow, .hero__brand, .hero .lede, .hero__cta', { y: 0, opacity: 1, duration: 1.1, stagger: 0.08, ease: 'power3.out' }, 0.3)
-    .to('#heroBack span', { opacity: 1, scale: 1, duration: 2.2, ease: 'expo.out' }, 0.2);
+  tl.to('.hero__logo', { clipPath: 'inset(0 0% 0 0)', y: 0, duration: 1.6, ease: 'expo.inOut' })
+    .to('.hero .eyebrow, .hero .lede, .hero__cta', { y: 0, opacity: 1, duration: 1.1, stagger: 0.08, ease: 'power3.out' }, 0.7);
 }
 
-// hero photo + giant 360° dissolve as we leave the ground
+// hero photo dissolves as we leave the ground
 gsap.timeline({ scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } })
   .to('#heroPhoto', { scale: 1.15, opacity: 0, ease: 'none' }, 0)
-  .to('#heroBack', { yPercent: -40, opacity: 0, ease: 'none' }, 0)
   .to('.hero__content', { y: -140, opacity: 0, ease: 'none' }, 0)
   .to('.hero__scroll', { opacity: 0, ease: 'none', duration: 0.3 }, 0);
 

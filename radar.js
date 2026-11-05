@@ -299,7 +299,7 @@ export function createScope(canvas) {
       const a = tg.a - Math.PI / 2;
       const x = c + Math.cos(a) * R * tg.r, y = c + Math.sin(a) * R * tg.r;
       const isContact = tg.own && contact;
-      g.fillStyle = isContact ? `rgba(226, 190, 120, ${0.45 + lit * 0.55})` : `rgba(130, 255, 195, ${0.15 + lit * 0.85})`;
+      g.fillStyle = isContact ? `rgba(76, 195, 245, ${0.45 + lit * 0.55})` : `rgba(130, 255, 195, ${0.15 + lit * 0.85})`;
       g.beginPath(); g.arc(x, y, isContact ? 3.6 : 2.6, 0, TAU); g.fill();
       if (!tg.label) continue;
       g.strokeStyle = g.fillStyle;

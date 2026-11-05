@@ -17,10 +17,11 @@ SRC = ROOT / "assests/a320/textures/material02_baseColor.jpeg"
 OUT = ROOT / "assests/a320/textures/as360_livery.jpg"
 FONT = "C:/Windows/Fonts/ARLRDBD.TTF"  # Arial Rounded MT Bold
 
-NAVY = np.array([11, 31, 77], float)
-AMBER = np.array([245, 165, 36], float)
-AMBER_LIGHT = np.array([255, 205, 110], float)
-CYAN = np.array([73, 198, 255], float)
+# brand colours, from the official logo
+NAVY = np.array([17, 28, 68], float)        # #111c44
+CYAN = np.array([0, 162, 229], float)       # #00a2e5
+CYAN_LIGHT = np.array([120, 210, 246], float)
+CYAN_DEEP = np.array([0, 104, 170], float)
 
 img = np.asarray(Image.open(SRC).convert("RGB")).astype(float)
 H, W, _ = img.shape
@@ -51,9 +52,13 @@ def tint(mask, color, ref=235.0):
 
 # navy paint, including its darkest shaded edges, but not the lavender UV background
 blue = (B - R > 35) & (B > 45) & (B - G > 20) & (luma < 130)
-red = (R > 150) & (G < 90) & (B < 90)
-orange = (R > 190) & (G >= 90) & (G < 150) & (B < 80)
-yellow = (R > 190) & (G >= 150) & (B < 90)
+# the rollout swoosh's warm bands, classified by hue (green/red ratio) so shaded and antialiased
+# pixels are caught too, not just the flat band colours
+warm = (R - B > 45) & (R > 100) & (R > G)
+ratio = G / np.maximum(R, 1)
+red = warm & (ratio < 0.42)
+orange = warm & (ratio >= 0.42) & (ratio < 0.72)
+yellow = warm & (ratio >= 0.72)
 
 # 1. Remove the "A320" / "AIRBUS INDUSTRIE" titles on the forward fuselage
 front = region_mask(FRONT)
@@ -107,18 +112,18 @@ for strip, crown, x_start, v_off in ((FRONT, CROWN_F, 0, 0), (REAR, CROWN_R, 178
                 shade = np.clip(luma[ys[nav], x] / 235, 0.4, 1.1)[:, None]
                 img[ys[nav], x] = NAVY * shade
             if stripe.any():
-                img[ys[stripe], x] = AMBER
+                img[ys[stripe], x] = CYAN
 
 # 3. Tail swoosh and fins: rebrand the rollout colours
 tail = region_mask(REAR, FIN_L, FIN_R)
 tint(blue & tail, NAVY, 140)
-tint(red & tail, np.array([232, 118, 30.0]), 160)
-tint(orange & tail, AMBER, 190)
-tint(yellow & tail, AMBER_LIGHT, 200)
+tint(red & tail, CYAN_DEEP, 160)
+tint(orange & tail, CYAN, 190)
+tint(yellow & tail, CYAN_LIGHT, 200)
 
 # 4. Nacelles: deep navy cowlings
 nac = region_mask(NACELLE) & (luma > 60) & (np.abs(B - R) < 40)
-tint(nac, np.array([22, 52, 112.0]), 230)
+tint(nac, NAVY, 230)
 
 out = Image.fromarray(img.astype(np.uint8))
 draw = ImageDraw.Draw(out)
@@ -156,8 +161,8 @@ def title_layer():
     wa = ld.textlength(a, font=font)
     wb = ld.textlength(b, font=font)
     x = (w - wa - wb) / 2
-    ld.text((x, 60), a, font=font, fill=(11, 31, 77, 255), anchor="lm")
-    ld.text((x + wa, 60), b, font=font, fill=(226, 128, 0, 255), anchor="lm")  # deeper amber reads on white
+    ld.text((x, 60), a, font=font, fill=(17, 28, 68, 255), anchor="lm")
+    ld.text((x + wa, 60), b, font=font, fill=(0, 162, 229, 255), anchor="lm")
     return layer
 
 
@@ -175,7 +180,7 @@ for (x0, y0, x1, y1), flip in (((742, 1046, 862, 1074), False), ((742, 866, 862,
     patch[pl < 200] = np.median(patch[pl >= 200], axis=0)
     out.paste(Image.fromarray(patch.astype(np.uint8)), (x0, y0))
     reg = Image.new("RGBA", (x1 - x0, y1 - y0), (0, 0, 0, 0))
-    ImageDraw.Draw(reg).text(((x1 - x0) / 2, (y1 - y0) / 2), "VT-AS360", font=small, fill=(11, 31, 77, 255), anchor="mm")
+    ImageDraw.Draw(reg).text(((x1 - x0) / 2, (y1 - y0) / 2), "VT-AS360", font=small, fill=(17, 28, 68, 255), anchor="mm")
     if flip:
         reg = reg.transpose(Image.ROTATE_180)
     out.paste(reg, (x0, y0), reg)
