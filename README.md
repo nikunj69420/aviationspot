@@ -22,6 +22,8 @@ Then open http://localhost:5173. (`tools/serve.py` is a plain static server that
 - `assests/*/*.glb`: the 3D models the site loads (meshopt-compressed, WebP textures): `a320`, `c182`, `jet_engine`, `radar`, `g650`
 - `tools/compress_models.py`: rebuilds those .glb files from the source glTFs (`python -I tools/compress_models.py`, needs Node for npx)
 - `tools/convert_jet_engine.py`: converts the jet engine's spec/gloss materials to metal/rough (run before compressing it)
+- `assests/atc_tower/delhi_atc_tower.glb`: the Delhi IGI Airport ATC tower (HOK, 101.9 m), modelled procedurally from photographs by `tools/build_delhi_tower.mjs` (`node tools/build_delhi_tower.mjs <node_modules with three@0.169.0>`); 1 unit = 1 m, not yet used on the page
+- `tools/model_viewer.html`: orbit any model, e.g. http://localhost:5173/tools/model_viewer.html?src=../assests/atc_tower/delhi_atc_tower.glb (`az`, `focus`, `zoom` set the view)
 - `tools/livery.py`: paints the A320 in the logo livery: the official wordmark on both sides of the fuselage, the tower-and-radar emblem on the tail, a cyan wave cheatline over a navy belly (`python -I tools/livery.py`, then rebuild `assests/a320/a320.glb` with `tools/compress_models.py`). The logo images it uses, `brand/livery-title.png` and `brand/livery-emblem.png`, are rendered by `node tools/render_logo.mjs <node_modules with @resvg/resvg-js>`
 
 The early-access form isn't connected to a backend yet; nothing is sent.

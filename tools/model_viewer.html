@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Model viewer</title>
+  <!-- Look at any model in the repo: /tools/model_viewer.html?src=../assests/atc_tower/delhi_atc_tower.glb -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b163a; overflow: hidden; font: 13px system-ui, sans-serif; color: #cfe7f7; }
+    canvas { display: block; }
+    #info { position: fixed; left: 14px; bottom: 12px; opacity: .75; }
+  </style>
+  <script type="importmap">
+    { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+    } }
+  </script>
+</head>
+<body>
+  <p id="info">drag to orbit · scroll to zoom</p>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+    const params = new URLSearchParams(location.search);
+    const src = params.get('src') ?? '../assests/atc_tower/delhi_atc_tower.glb';
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x8fb6dc);
+    scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x6b5a45, 0.8));
+    const sun = new THREE.DirectionalLight(0xfff1dc, 2.4);
+    sun.position.set(60, 90, 50);
+    scene.add(sun);
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 48), new THREE.MeshStandardMaterial({ color: 0x7d8a6e, roughness: 1 }));
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.5, 2000);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(src, (gltf) => {
+      scene.add(gltf.scene);
+      const box = new THREE.Box3().setFromObject(gltf.scene);
+      const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+      const focus = Number(params.get('focus') ?? 0.5); // 0 = base, 1 = top
+      const zoom = Number(params.get('zoom') ?? 1);
+      const az = Number(params.get('az') ?? 35) * Math.PI / 180;
+      controls.target.set(c.x, box.min.y + size.y * focus, c.z);
+      const dist = (size.y * 0.62 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) / zoom; // whole model fits at zoom 1
+      camera.position.set(c.x + Math.sin(az) * dist, box.min.y + size.y * Math.min(0.95, focus + 0.08), c.z + Math.cos(az) * dist);
+      controls.update();
+      document.getElementById('info').textContent += ` · ${src.split('/').pop()} · ${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} m`;
+      window.modelReady = true;
+    });
+
+    const resize = () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
+    addEventListener('resize', resize); resize();
+    renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+  </script>
+</body>
+</html>
