@@ -41,15 +41,18 @@ const KEYS = [
   { stage: 'sky', pm: [0.3, -4.3, 0], p: [2.7, -0.5, 2.2], r: [-0.12, -2.3, 0.07], s: 1.25, cy: -22, alt: 0, sky: ['#0b1a3a', '#3b4f8a', '#f08a5d'] },
   { stage: 'cockpit', p: [-9, 4, -8], r: [0.2, -2.6, 0.3], s: 1, cy: 6, alt: 400, sky: ['#14214a', '#5b5a8f', '#f3a274'] },
   // pillars: the A320 was just seen from the flight deck fly-out, so it stays up out of frame here
-  { stage: 'sky', pm: [0, 18, -30], p: [0, 15, -30], r: [0.25, 1.1, 0.12], s: 1, cy: -3.2, alt: 5000, sky: ['#2a63b4', '#6aa3dc', '#d6e8f6'] },
+  { stage: 'sky', pm: [0, 26, -30], p: [0, 22, -30], r: [0.25, 1.1, 0.12], s: 1, cy: -3.2, alt: 5000, sky: ['#2a63b4', '#6aa3dc', '#d6e8f6'] },
   { stage: 'engine', p: [3.8, 0.4, -2], r: [-0.3, -0.5, 0.06], s: 1, cy: -4, alt: 8000, sky: ['#040a17', '#0a1830', '#13284d'] },
   // exams: the A320 climbs out of frame so the globe has the right side to itself
-  { stage: 'sky', pm: [0, 18, -30], p: [2, 15, -30], r: [-0.08, -0.32, 0.04], s: 1.1, cy: -4.5, alt: 10000, sky: ['#12397a', '#3f7ccb', '#a9cdee'] },
+  { stage: 'sky', pm: [0, 26, -30], p: [2, 22, -30], r: [-0.08, -0.32, 0.04], s: 1.1, cy: -4.5, alt: 10000, sky: ['#12397a', '#3f7ccb', '#a9cdee'] },
   { stage: 'headset', p: [9, 6, -14], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -7, alt: 14000, sky: ['#0a1230', '#2b2c55', '#b8684a'] },
   // story + impact: the A320 climbs out of frame so the reading sections stay clean
-  { stage: 'sky', pm: [0, 18, -30], p: [-4, 15, -30], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -6.5, alt: 18000, sky: ['#0a2456', '#23559e', '#6f9fd6'] },
-  { stage: 'sky', pm: [0, 18, -30], p: [4, 15, -30], r: [0.18, -0.4, 0.06], s: 1, cy: -9.5, alt: 24000, sky: ['#0a1d48', '#2c4f8f', '#9a9fc4'] },
-  { stage: 'sky', pm: [1.5, 7, -8], p: [5.6, 3.2, -9], r: [0.14, -0.3, 0.05], s: 1, cy: -10, alt: 30000, sky: ['#0a1838', '#40477e', '#d0906a'] },
+  { stage: 'sky', pm: [0, 26, -30], p: [-4, 22, -30], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -6.5, alt: 18000, sky: ['#0a2456', '#23559e', '#6f9fd6'] },
+  { stage: 'sky', pm: [0, 26, -30], p: [4, 22, -30], r: [0.18, -0.4, 0.06], s: 1, cy: -9.5, alt: 24000, sky: ['#0a1d48', '#2c4f8f', '#9a9fc4'] },
+  // identity: still out of frame, so the logo has the stage
+  { stage: 'sky', pm: [0, 26, -30], p: [-4, 22, -30], r: [0.18, -0.4, 0.06], s: 1, cy: -9.8, alt: 27000, sky: ['#0a1a44', '#33508c', '#b29bb8'] },
+  // founder: kept out of frame too; the A320 comes back for the boarding pass take-off
+  { stage: 'sky', pm: [0, 26, -30], p: [6, 22, -30], r: [0.14, -0.3, 0.05], s: 1, cy: -10, alt: 30000, sky: ['#0a1838', '#40477e', '#d0906a'] },
   { stage: 'sky', pm: [1.5, 7, -6], p: [3.4, 2.3, -4], r: [0.12, -0.35, 0.05], s: 1.05, cy: -8, alt: 35000, sky: ['#0a1838', '#6b4a7a', '#f3a35a'] },
   { stage: 'sky', p: [10, 5.5, -5], r: [0.1, -0.2, 0.12], s: 1, cy: -8, alt: 35000, sky: ['#071226', '#3a3566', '#d98a4f'] },
 ];
@@ -466,7 +469,7 @@ function updateSky(dt, time, target, ease) {
 
   // contrails get thicker the higher we fly
   const k = target.i + target.t;
-  const trailVis = plane.visible ? Math.max(range(k, 1.6, 2.4) * (1 - range(k, 9.4, 10)), departure.t > 0 ? 1 : 0) : 0;
+  const trailVis = plane.visible ? Math.max(range(k, 1.6, 2.4) * (1 - range(k, 10.4, 11)), departure.t > 0 ? 1 : 0) : 0;
   fwd.set(1, 0, 0).applyQuaternion(plane.quaternion);
   for (let e = 0; e < 2; e++) {
     const idx = e * TRAIL + trailHead;
@@ -490,9 +493,9 @@ function updateSky(dt, time, target, ease) {
   trailGeo.attributes.alpha.needsUpdate = true;
   trailGeo.attributes.size.needsUpdate = true;
 
-  stars.material.opacity = range(k, 8.4, 9.2) * 0.85;
+  stars.material.opacity = range(k, 9.4, 10.2) * 0.85;
   flareLight.intensity = 1;
-  flare.visible = k < 0.9 || k > 8.5;
+  flare.visible = k < 0.9 || k > 9.5;
 
   // G650 crosses right → left as the flight log hands over to the impact section
   const jt = clamp01((k - 6) / 1);
@@ -888,9 +891,42 @@ gsap.fromTo(quote.querySelectorAll('.w'), { opacity: 0.16 }, {
   opacity: 1, stagger: 0.1, ease: 'none',
   scrollTrigger: { trigger: quote, start: 'top 80%', end: 'bottom 45%', scrub: true },
 });
-gsap.from('.deck__by, .deck__letter', { y: 30, opacity: 0, duration: 1.1, stagger: 0.1, ease: 'expo.out', scrollTrigger: { trigger: '.deck__by', start: 'top 88%' } });
-gsap.from('.meaning > div', { y: 50, opacity: 0, duration: 1.2, stagger: 0.1, ease: 'expo.out', scrollTrigger: { trigger: '.meaning', start: 'top 85%' } });
+gsap.from('.deck__letter, .founder__sign', { y: 30, opacity: 0, duration: 1.1, stagger: 0.1, ease: 'expo.out', scrollTrigger: { trigger: '.deck__letter', start: 'top 88%' } });
 gsap.from('.values li', { y: 20, opacity: 0, scale: 0.92, duration: 0.8, stagger: 0.06, ease: 'back.out(2)', scrollTrigger: { trigger: '.values', start: 'top 90%' } });
+
+// Founder: profile card, then the journey route draws across its stops
+gsap.from('.founder__card', { y: 60, opacity: 0, rotateY: -12, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: '.founder__grid', start: 'top 80%' } });
+gsap.from('.founder__story p', { y: 30, opacity: 0, duration: 1.1, stagger: 0.12, ease: 'expo.out', scrollTrigger: { trigger: '.founder__story', start: 'top 75%' } });
+gsap.to('.journey__line span', { scaleX: 1, ease: 'none', scrollTrigger: { trigger: '.journey', start: 'top 85%', end: 'bottom 55%', scrub: true } });
+gsap.from('.journey li:not(.journey__line)', { y: 30, opacity: 0, duration: 0.9, stagger: 0.12, ease: 'expo.out', scrollTrigger: { trigger: '.journey', start: 'top 82%' } });
+
+// Identity: each symbol of the logo, picked from the tabs or the hotspots, gets a glowing ring
+const anatomy = document.getElementById('anatomy');
+const RINGS = JSON.parse(anatomy.dataset.rings);
+const ringEl = anatomy.querySelector('.anatomy__ring');
+const aTabs = [...anatomy.querySelectorAll('.anatomy__tab')];
+const aSpots = [...anatomy.querySelectorAll('.anatomy__spot')];
+const aTexts = [...anatomy.querySelectorAll('.anatomy__text')];
+let anatomyI = 0, anatomyTouched = false;
+function showSymbol(i) {
+  anatomyI = i;
+  const [x, y, w, h] = RINGS[i];
+  Object.assign(ringEl.style, { left: `${(x / 1564) * 100}%`, top: `${(y / 473) * 100}%`, width: `${(w / 1564) * 100}%`, height: `${(h / 473) * 100}%` });
+  aTabs.forEach((t, j) => t.setAttribute('aria-selected', String(i === j)));
+  aSpots.forEach((s, j) => s.setAttribute('aria-current', String(i === j)));
+  aTexts.forEach((p, j) => { p.hidden = i !== j; });
+  if (!reduceMotion) gsap.fromTo(aTexts[i], { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' });
+}
+[...aTabs, ...aSpots].forEach((el) => el.addEventListener('click', () => { anatomyTouched = true; showSymbol(+el.dataset.i); }));
+showSymbol(0);
+// walks through the symbols on its own while on screen, until the visitor picks one
+let anatomyVisible = false;
+new IntersectionObserver(([e]) => { anatomyVisible = e.isIntersecting; }, { threshold: 0.4 }).observe(anatomy);
+setInterval(() => { if (anatomyVisible && !anatomyTouched && !reduceMotion) showSymbol((anatomyI + 1) % RINGS.length); }, 4200);
+gsap.from('.anatomy__stage', { y: 60, opacity: 0, scale: 0.96, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: anatomy, start: 'top 82%' } });
+gsap.from('.anatomy__tab', { y: 24, opacity: 0, duration: 0.9, stagger: 0.07, ease: 'expo.out', scrollTrigger: { trigger: '.anatomy__tabs', start: 'top 90%' } });
+gsap.from('.meaning > div', { y: 50, opacity: 0, duration: 1.2, stagger: 0.1, ease: 'expo.out', scrollTrigger: { trigger: '.meaning', start: 'top 85%' } });
+gsap.from('.ideas li', { y: 30, opacity: 0, duration: 1, stagger: 0.08, ease: 'expo.out', scrollTrigger: { trigger: '.ideas', start: 'top 85%' } });
 
 // Boarding pass: 3D tilt, glare and holographic foil that follow the pointer
 function tiltPass(card) {

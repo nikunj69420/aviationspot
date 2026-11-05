@@ -8,8 +8,8 @@
   <link rel="icon" href="brand/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,600..800&family=Noto+Serif:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=37" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,600..800&family=Noto+Serif:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=Caveat:wght@600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=39" />
   <script type="importmap">
     { "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
@@ -58,7 +58,7 @@
           <a href="#platform" class="btn btn--ghost" data-to>Explore</a>
         </div>
       </div>
-      <div class="hero__scroll">Scroll to take off<i></i></div>
+      <div class="hero__scroll">Scroll to take off<span class="als" aria-hidden="true"><span class="als__thr"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></span><span class="als__bar" style="--d:2.2px;--g:2px;--k:5"><b></b><b></b><b></b><b></b><b></b></span><span class="als__bar" style="--d:2.6px;--g:2.5px;--k:4"><b></b><b></b><b></b><b></b><b></b></span><span class="als__bar als__bar--cross" style="--d:2.9px;--g:3px;--k:3"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></span><span class="als__bar" style="--d:3.3px;--g:3.5px;--k:2"><b></b><b></b><b></b><b></b><b></b></span><span class="als__bar" style="--d:3.8px;--g:4px;--k:1"><b></b><b></b><b></b><b></b><b></b></span><span class="als__bar" style="--d:4.4px;--g:4.6px;--k:0"><b></b><b></b><b></b><b></b><b></b></span></span></div>
     </section>
 
     <!-- COCKPIT (sticky): the A320 flight deck from the captain's seat -->
@@ -240,16 +240,90 @@
       <p class="note">Recalled questions are student-reported, unofficial practice material, not DGCA papers. The 85–89% figure is reported question overlap, not a guarantee of results.</p>
     </section>
 
-    <!-- 30,000 FT: a note from the flight deck -->
-    <section class="deck" id="deck" data-stage="sky">
-      <p class="eyebrow">08 · A note from the flight deck</p>
-      <blockquote class="deck__quote" id="deckQuote">The name is evolving. The vision is expanding. But the purpose <em>remains the same.</em></blockquote>
-      <p class="deck__by"><span></span>The founder, AviationSpot360</p>
-      <p class="deck__letter">I started AviationSpot on 5 April 2024 as one person with no audience, no team and no certainty about where it would go. I knew one thing: students deserved better information and an honest picture of the aviation industry. To every student and parent who has trusted us, thank you. We are here to share realities and help you decide with clarity.</p>
+    <!-- 27,000 FT: what the logo means -->
+    <section class="identity" id="identity" data-stage="sky">
+      <p class="eyebrow">08 · The story behind our identity</p>
+      <h2 class="reveal">More than a logo.<br/><em>A 360° vision.</em></h2>
+      <p class="identity__lede">A direction and a purpose: a visual identity shaped by aviation, guidance, connection and complete awareness.</p>
+      <div class="anatomy" id="anatomy" data-rings='[[130,250,270,270],[940,268,360,215],[1386,165,340,300],[1386,62,170,160],[1383,300,250,250]]'>
+        <div class="anatomy__stage">
+          <div class="anatomy__logo">
+            <img src="brand/logo-white.svg" alt="The AviationSpot360 logo" loading="lazy" />
+            <span class="anatomy__ring" aria-hidden="true"></span>
+            <button class="anatomy__spot" type="button" data-i="0" style="left:8.31%;top:52.85%" aria-label="The aircraft-inspired “A”"><i></i></button>
+            <button class="anatomy__spot" type="button" data-i="1" style="left:60.10%;top:56.66%" aria-label="The cyan flight path"><i></i></button>
+            <button class="anatomy__spot" type="button" data-i="2" style="left:88.62%;top:34.88%" aria-label="The 360° radar"><i></i></button>
+            <button class="anatomy__spot" type="button" data-i="3" style="left:88.62%;top:13.11%" aria-label="The control-tower form"><i></i></button>
+            <button class="anatomy__spot" type="button" data-i="4" style="left:88.43%;top:63.42%" aria-label="The navy and cyan palette"><i></i></button>
+          </div>
+        </div>
+        <div class="anatomy__tabs" role="tablist" aria-label="Logo symbols">
+          <button class="anatomy__tab" type="button" role="tab" data-i="0" aria-selected="true"><span>01</span>The aircraft-inspired “A”</button>
+          <button class="anatomy__tab" type="button" role="tab" data-i="1" aria-selected="false"><span>02</span>The cyan flight path</button>
+          <button class="anatomy__tab" type="button" role="tab" data-i="2" aria-selected="false"><span>03</span>The 360° radar</button>
+          <button class="anatomy__tab" type="button" role="tab" data-i="3" aria-selected="false"><span>04</span>The control-tower form</button>
+          <button class="anatomy__tab" type="button" role="tab" data-i="4" aria-selected="false"><span>05</span>The navy and cyan palette</button>
+        </div>
+        <div class="anatomy__texts" aria-live="polite">
+          <p class="anatomy__text" data-i="0">The stylised opening letter and aircraft silhouette stand for the beginning of an aviation dream: ambition, the courage to begin, and the people taking their first steps towards the industry.</p>
+          <p class="anatomy__text" data-i="1" hidden>The flowing cyan stroke suggests movement, direction and progression: the journey between ambition and achievement, shaped by preparation, informed choices and persistence.</p>
+          <p class="anatomy__text" data-i="2" hidden>The radar arcs around “360” mean a wider field of view and looking in every direction: exploring aviation beyond a single subject or career route.</p>
+          <p class="anatomy__text" data-i="3" hidden>The tower above “360” evokes coordination, communication, oversight and guidance: helping people navigate information and decisions with greater clarity.</p>
+          <p class="anatomy__text" data-i="4" hidden>Deep navy conveys professionalism, trust, discipline and reliability. Aviation cyan brings the open sky, clarity, fresh thinking and possibility. Together they balance credibility with aspiration.<span class="swatches"><i class="sw sw--navy"></i>Deep navy<i class="sw sw--cyan"></i>Aviation cyan</span></p>
+        </div>
+      </div>
       <div class="meaning">
-        <div><b>Aviation</b><p>The industry: its knowledge, opportunities and realities.</p></div>
-        <div><b>Spot</b><p>One place to discover, access and exchange meaningful aviation information.</p></div>
-        <div><b><em>360</em></b><p>The complete perspective, from the first aspiration to professional development.</p></div>
+        <div><b>Aviation</b><small>The industry we represent</small><p>The vast world of flight: people, aircraft, training, regulation, operations, technology, safety and careers.</p></div>
+        <div><b>Spot</b><small>The place where people connect</small><p>A common ground for aspirants, students, parents and professionals to find knowledge, ask questions and find direction.</p></div>
+        <div><b><em>360</em></b><small>The perspective we bring</small><p>An all-round view: requirements, costs, training pathways, opportunities, challenges and professional realities.</p></div>
+      </div>
+      <div class="ideas">
+        <p class="ideas__head">The five ideas we stand for</p>
+        <ul>
+          <li><b>Aspiration</b><span>Every aviation journey begins with a dream.</span></li>
+          <li><b>Guidance</b><span>A clearer direction makes the journey more informed.</span></li>
+          <li><b>Awareness</b><span>Understand the realities, not only the possibilities.</span></li>
+          <li><b>Professionalism</b><span>Respect knowledge, discipline and responsibility.</span></li>
+          <li><b>360° perspective</b><span>Look at the whole aviation picture, not just one part.</span></li>
+        </ul>
+      </div>
+      <p class="identity__line">We don’t just talk about flying.<br/><em>We help you understand the world behind it.</em></p>
+    </section>
+
+    <!-- 30,000 FT: the founder -->
+    <section class="deck founder" id="deck" data-stage="sky">
+      <p class="eyebrow">09 · The person behind the vision</p>
+      <div class="founder__grid">
+        <aside class="founder__card">
+          <svg class="founder__wings" viewBox="0 0 120 30" aria-hidden="true"><path d="M50 15C38 7 20 5 4 7c10 6 26 10 46 13M50 18C40 16 26 16 14 18M70 15c12-8 30-10 46-8-10 6-26 10-46 13M70 18c10-2 24-2 36 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="60" cy="16" r="8" fill="currentColor"/></svg>
+          <div class="founder__badge" aria-hidden="true">CS</div>
+          <h3>Capt. Choudhary Sourabh</h3>
+          <p class="founder__nick">“Flyboy”</p>
+          <p class="founder__role">CEO &amp; Founder, AviationSpot360</p>
+          <ul class="founder__chips">
+            <li>B737 type rated</li><li>First Officer · NSOP</li><li>Aviation mentor</li><li>7+ years</li>
+          </ul>
+        </aside>
+        <div class="founder__story">
+          <h2 class="reveal">Not every aviation dream begins with an <em>aviation background.</em></h2>
+          <p>I come from a middle-class family, just like many of you. I was never aware of aviation as a career option; my way in was my sister’s dream, a dream that unfortunately could not be completed. That became the starting point of my own journey.</p>
+          <p>I knew there were things I wished someone had explained clearly before I started: the realities of flight training, choosing the right FTO, exam preparation, the financial commitments. I didn’t want another student to make an important decision without understanding the reality behind it. That eventually became the Airspace of Awareness.</p>
+        </div>
+      </div>
+      <ol class="journey" aria-label="The founder’s journey">
+        <li class="journey__line" aria-hidden="true"><span></span></li>
+          <li><b>2021</b><span>Higher secondary done. Aviation enters, unexpectedly, through a sister’s dream.</span></li>
+          <li><b>2022</b><span>Flight training begins.</span></li>
+          <li><b>2023</b><span>Flying training complete in about nine months, delays included.</span></li>
+          <li><b>B737</b><span>Boeing 737 type rating.</span></li>
+          <li><b>F/O</b><span>Into operations as a First Officer with an NSOP.</span></li>
+          <li><b>2024</b><span>5 April: AviationSpot begins as one WhatsApp channel.</span></li>
+      </ol>
+      <blockquote class="deck__quote" id="deckQuote">You don’t need to be born into aviation to <em>build a future in aviation.</em></blockquote>
+      <p class="deck__letter">You need the right mindset, the courage to begin, the discipline to continue and the awareness to make the right decisions. Your background should never define your limit.</p>
+      <div class="founder__sign">
+        <p>The dream may be yours. The journey will be yours.<br/><em>Make sure the decisions are informed.</em></p>
+        <p class="founder__signature">Yours, Flyboy</p>
       </div>
       <ul class="values" aria-label="Our non-negotiables">
         <li>Transparency in communication</li><li>Independence in judgement</li><li>Respect for evidence</li><li>Consistency in contribution</li><li>Awareness before influence</li>
@@ -258,7 +332,7 @@
 
     <!-- FL350: boarding pass -->
     <section class="signup" id="board" data-stage="sky">
-      <p class="eyebrow">09 · Cruise · FL350</p>
+      <p class="eyebrow">10 · Cruise · FL350</p>
       <h2 class="reveal">Claim your<br/>boarding pass.</h2>
 
       <div class="pass-stage" id="passStage">
@@ -325,6 +399,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
   <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script type="module" src="main.js?v=63"></script>
+  <script type="module" src="main.js?v=66"></script>
 </body>
 </html>
