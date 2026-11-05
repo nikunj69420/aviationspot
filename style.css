@@ -429,7 +429,10 @@ main { overflow-x: clip; } /* slide-ins and the 3D pass tilt never widen the pag
 .founder__sign { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding: 28px 0; border-top: 1px solid var(--line); }
 .founder__sign p:first-child { font: 800 clamp(20px, 2.2vw, 28px)/1.25 var(--display); letter-spacing: -.02em; }
 .founder__sign em { color: transparent; background: var(--grain), var(--accent); -webkit-background-clip: text; background-clip: text; }
-.founder__signature { font: 600 clamp(36px, 4vw, 52px)/1 Caveat, cursive; color: var(--accent-2); transform: rotate(-4deg); }
+.founder__signature { transform: rotate(-4deg); }
+/* the sign-off is drawn letter by letter: each stroke is traced, then the ink fills in (main.js) */
+.signature { display: block; height: clamp(54px, 5.6vw, 78px); width: auto; overflow: visible; filter: drop-shadow(0 0 14px rgba(0,162,229,.35)); }
+.sig__l { fill: var(--accent-2); fill-opacity: 1; stroke: var(--accent-2); stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; }
 .values { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
 .values li { padding: 10px 18px; border-radius: 999px; border: 1px solid rgba(0,162,229,.4); background: rgba(0,162,229,.08); font: 600 14px var(--font); color: var(--ink); }
 

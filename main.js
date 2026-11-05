@@ -894,6 +894,23 @@ gsap.fromTo(quote.querySelectorAll('.w'), { opacity: 0.16 }, {
 gsap.from('.deck__letter, .founder__sign', { y: 30, opacity: 0, duration: 1.1, stagger: 0.1, ease: 'expo.out', scrollTrigger: { trigger: '.deck__letter', start: 'top 88%' } });
 gsap.from('.values li', { y: 20, opacity: 0, scale: 0.92, duration: 0.8, stagger: 0.06, ease: 'back.out(2)', scrollTrigger: { trigger: '.values', start: 'top 90%' } });
 
+// Founder's sign-off writes itself: a pen traces each letter in turn, and the ink fills in just behind it
+const sigLetters = [...document.querySelectorAll('.signature .sig__l')];
+if (sigLetters.length && !reduceMotion) {
+  const lens = sigLetters.map((p) => p.getTotalLength());
+  sigLetters.forEach((p, i) => Object.assign(p.style, { strokeDasharray: lens[i], strokeDashoffset: lens[i], fillOpacity: 0 }));
+  const write = gsap.timeline({ paused: true });
+  let at = 0;
+  sigLetters.forEach((p, i) => {
+    if (i === 6) at += 0.35; // the pen lifts after "Yours," before "Flyboy"
+    const dur = 0.28 + lens[i] / 5200; // longer strokes take longer, like a real pen
+    write.to(p, { strokeDashoffset: 0, duration: dur, ease: 'power1.inOut' }, at)
+      .to(p, { fillOpacity: 1, duration: 0.45, ease: 'power1.out' }, at + dur * 0.7);
+    at += dur * 0.8 + 0.04;
+  });
+  ScrollTrigger.create({ trigger: '.founder__sign', start: 'top 80%', once: true, onEnter: () => write.play() });
+}
+
 // Founder: profile card, then the journey route draws across its stops
 gsap.from('.founder__card', { y: 60, opacity: 0, rotateY: -12, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: '.founder__grid', start: 'top 80%' } });
 gsap.from('.founder__story p', { y: 30, opacity: 0, duration: 1.1, stagger: 0.12, ease: 'expo.out', scrollTrigger: { trigger: '.founder__story', start: 'top 75%' } });
