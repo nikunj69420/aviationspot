@@ -40,7 +40,8 @@ document.querySelectorAll('[data-to]').forEach((a) =>
 const KEYS = [
   { stage: 'sky', pm: [0.3, -4.3, 0], p: [2.7, -0.5, 2.2], r: [-0.12, -2.3, 0.07], s: 1.25, cy: -22, alt: 0, sky: ['#0b1a3a', '#3b4f8a', '#f08a5d'] },
   { stage: 'cockpit', p: [-9, 4, -8], r: [0.2, -2.6, 0.3], s: 1, cy: 6, alt: 400, sky: ['#14214a', '#5b5a8f', '#f3a274'] },
-  { stage: 'sky', p: [1.2, 1.8, -10], r: [0.25, 1.1, 0.12], s: 1, cy: -3.2, alt: 5000, sky: ['#2a63b4', '#6aa3dc', '#d6e8f6'] },
+  // pillars: the A320 was just seen from the flight deck fly-out, so it stays up out of frame here
+  { stage: 'sky', pm: [0, 18, -30], p: [0, 15, -30], r: [0.25, 1.1, 0.12], s: 1, cy: -3.2, alt: 5000, sky: ['#2a63b4', '#6aa3dc', '#d6e8f6'] },
   { stage: 'engine', p: [3.8, 0.4, -2], r: [-0.3, -0.5, 0.06], s: 1, cy: -4, alt: 8000, sky: ['#040a17', '#0a1830', '#13284d'] },
   // exams: the A320 climbs out of frame so the globe has the right side to itself
   { stage: 'sky', pm: [0, 18, -30], p: [2, 15, -30], r: [-0.08, -0.32, 0.04], s: 1.1, cy: -4.5, alt: 10000, sky: ['#12397a', '#3f7ccb', '#a9cdee'] },
@@ -522,9 +523,9 @@ function updateCockpit() {
   // portrait screens: widen the lens so the panel still fits from the seat
   const fov = cam.aspect < 1 ? 68 : 46;
   if (cam.fov !== fov) { cam.fov = fov; cam.updateProjectionMatrix(); }
-  lines.forEach((l, i) => {
-    const c = 0.12 + i * 0.27;
-    const v = range(p, c - 0.1, c) * (1 - range(p, c + 0.14, c + 0.22));
+  // one line, up from the moment we're in the seat until the camera flies out through the windshield
+  lines.forEach((l) => {
+    const v = range(p, 0, 0.05) * (1 - range(p, 0.8, 0.86));
     l.style.opacity = v;
     l.style.transform = `translateY(${(1 - v) * 30}px)`;
   });
