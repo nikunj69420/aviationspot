@@ -537,7 +537,7 @@ function updateEngine(dt) {
   cam.position.set(-Math.cos(a) * R, lerp(2.4, 0.8, p) - pointer.y * 0.6, Math.sin(a) * R);
   // aim off-centre so the engine sits lower-right, clear of the copy
   const fx = -cam.position.x / R, fz = -cam.position.z / R;
-  const off = wide ? 2.5 : 0;
+  const off = wide ? 3.4 : 0;
   cam.lookAt(fz * off, wide ? 0.5 : 2.2, -fx * off);
   if (engineMixer && !reduceMotion) engineMixer.update(dt * (0.6 + p));
 
