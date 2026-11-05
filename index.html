@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,600..800&family=Noto+Serif:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=24" />
+  <link rel="stylesheet" href="style.css?v=29" />
   <script type="importmap">
     { "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
@@ -33,6 +33,9 @@
 
   <header class="nav">
     <a href="#hero" class="brand" data-to><img src="brand/logo-white-wordmark.svg" alt="AviationSpot360 home" /></a>
+    <nav class="nav__links" aria-label="Sections">
+      <a href="#platform" data-to>Platform</a><a href="#radar" data-to>Our story</a><a href="#impact" data-to>Impact</a>
+    </nav>
     <a href="#board" class="btn btn--small magnet" data-to>Early access</a>
   </header>
 
@@ -119,29 +122,85 @@
       <p class="note">Practice spaces are independent simulations, not official examination systems.</p>
     </section>
 
-    <!-- 14,000 FT: radar (sticky, 3D surveillance radar + scope) -->
+    <!-- 14,000 FT: radar (sticky, 3D surveillance radar): where the story begins -->
     <section class="radar sticky-sec" id="radar" data-stage="radar">
       <div class="sticky">
         <div class="radar__copy">
-          <p class="eyebrow">05 · Radar contact</p>
-          <h2>Always in<br/><em>radar contact.</em></h2>
-          <p class="radar__sub">Mentors, study groups and authority updates that keep you on course, from your first ground-school exam to the airline cockpit.</p>
+          <p class="eyebrow">05 · Our story</p>
+          <h2>It began with<br/><em>one transmission.</em></h2>
+          <p class="radar__sub">5 April 2024. One person, one WhatsApp channel, no marketing team and no funding. Just the belief that aspiring pilots deserve the realities of aviation before they make life-changing decisions.</p>
+          <dl class="radar__log">
+            <div><dt>Channel open</dt><dd>05·04·2024</dd></div>
+            <div><dt>Community today</dt><dd>13,000+</dd></div>
+          </dl>
         </div>
-        <canvas class="scope" id="scope" aria-hidden="true"></canvas>
       </div>
     </section>
 
-    <!-- 18,000 FT: departures -->
-    <section class="events" data-stage="sky">
-      <p class="eyebrow">06 · Departures</p>
-      <h2 class="reveal">Upcoming sessions.</h2>
-      <p class="note">Sample schedule. Live events will appear here.</p>
-      <div class="departures" id="departures"></div>
+    <!-- 18,000 FT: the brand story as a flight log -->
+    <section class="story" id="story" data-stage="sky">
+      <div class="story__head">
+        <p class="eyebrow">06 · Flight log</p>
+        <h2 class="reveal">From one channel<br/>to an <em>airspace.</em></h2>
+        <p class="story__lede">Built on transparency, driven by purpose, defined by reality. The journey so far, one leg at a time.</p>
+        <p class="story__counter" aria-hidden="true"><span id="logNo">01</span><small>/ 09</small></p>
+      </div>
+      <ol class="log" id="log">
+        <li class="log__rail" aria-hidden="true"><span id="logRail"></span></li>
+        <li class="log__item"><span class="log__no">01</span><div class="log__body"><small>05 Apr 2024</small><h3>The first transmission</h3><p>One person and one WhatsApp channel, started because honest answers about flying schools, training costs, DGCA exams, medicals and careers were hard to find.</p><p class="log__quote">Give people the realities of aviation before they make life-changing decisions.</p></div></li>
+        <li class="log__item"><span class="log__no">02</span><div class="log__body"><small>Transparency</small><h3>Clearing the fog</h3><p>Real identity, real people, information shared openly. Practical facts about academies, training and industry practice, so students and parents can judge for themselves.</p><p class="log__quote">Transparency before everything.</p></div></li>
+        <li class="log__item"><span class="log__no">03</span><div class="log__body"><small>PAQ</small><h3>Beyond the radar</h3><p>Previously Attempted Questions: students who sit a DGCA paper share what they recall, and we organise it for everyone preparing next, alongside DGCA notices and circulars.</p><p class="log__quote">Information should travel further than the examination hall.</p></div></li>
+        <li class="log__item"><span class="log__no">04</span><div class="log__body"><small>WPC</small><h3>The weekly flight plan</h3><p>Weekly Predicted Compilations built from observed patterns and student feedback, with a reported 85–89% question overlap across attempts.</p><p class="log__quote">Consistency was the difference.</p></div></li>
+        <li class="log__item"><span class="log__no">05</span><div class="log__body"><small>Independence</small><h3>Trust over take-off revenue</h3><p>Promotional offers from academies and FTOs were turned down whenever they could compromise honest communication with students.</p><p class="log__quote">Credibility over commercial opportunity.</p></div></li>
+        <li class="log__item"><span class="log__no">06</span><div class="log__body"><small>Mentorship</small><h3>The human connection</h3><p>Calls and conversations on exam planning, medicals, school selection and careers: how the information applies to your own journey.</p><p class="log__quote">Mentorship without the sales pitch.</p></div></li>
+        <li class="log__item"><span class="log__no">07</span><div class="log__body"><small>Self-study</small><h3>Charting your own course</h3><p>A structured Self-Study Mentorship Programme, kept affordable: direction, planning and accountability for students preparing on their own.</p><p class="log__quote">Guidance for those who choose their own path.</p></div></li>
+        <li class="log__item"><span class="log__no">08</span><div class="log__body"><small>Resilience</small><h3>Turbulence never changed our course</h3><p>Visibility brought criticism and noise. The answer was documented work, transparency and consistency, never arguments.</p><p class="log__quote">We did not start this to compete for attention. We started it to create an impact.</p></div></li>
+        <li class="log__item"><span class="log__no">09</span><div class="log__body"><small>Now</small><h3>A new flight level</h3><p>AviationSpot becomes AviationSpot360: the whole journey in view, from the first aspiration to exams, medicals, training, licensing and the airline.</p><p class="log__quote">A new identity. An expanded vision. The same purpose.</p></div></li>
+      </ol>
+    </section>
+
+    <!-- 24,000 FT: achievements and impact -->
+    <section class="impact" id="impact" data-stage="sky">
+      <p class="eyebrow">07 · Our legacy, our impact</p>
+      <h2 class="reveal">Trendsetters since<br/><em>05 April 2024.</em></h2>
+      <div class="stats">
+        <div class="stat"><b><span data-count="13000">13,000</span>+</b><p>community connections across WhatsApp channels, groups and social platforms</p></div>
+        <div class="stat"><b><span data-count="85">85</span>–89%</b><p>reported question overlap for our weekly WPC predicted papers</p></div>
+        <div class="stat"><b>Every</b><p>DGCA exam attempt followed by recalled-question sharing</p></div>
+        <div class="stat"><b>₹0</b><p>paid promotion taken from academies or FTOs that could cost our independence</p></div>
+      </div>
+      <div class="feats">
+        <article class="feat"><span class="feat__tag">Community</span><h3>A fast-growing aviation awareness community</h3><p>Students, trainee pilots, CPL holders, working professionals and parents, built on awareness, trust and education.</p></article>
+        <article class="feat"><span class="feat__tag">Transparency</span><h3>The Airspace of Awareness</h3><p>An independent space for aviation realities: transparency over promotion, facts over false promises, reality over half-information.</p></article>
+        <article class="feat"><span class="feat__tag">Mentorship</span><h3>Dedicated aviation mentorship</h3><p>Genuine guidance for aspirants, student pilots, cadets and parents, rather than selling aviation as a dream.</p></article>
+        <article class="feat"><span class="feat__tag">Self-study</span><h3>Self-Study Mentorship Programmes</h3><p>Structured, affordable direction for students preparing for DGCA exams on their own. The launch response proved the need.</p></article>
+        <article class="feat"><span class="feat__tag">DGCA · PAQ</span><h3>Recalled questions after every exam</h3><p>Student-recalled DGCA questions collected and shared after each examination, attempt after attempt. Consistency is the flex.</p></article>
+        <article class="feat"><span class="feat__tag">WPC · RTR</span><h3>Weekly WPC predicted papers</h3><p>A predicted paper every exam week with a reported 85–89% question overlap, continued until RTR moved to the DGCA.</p></article>
+        <article class="feat"><span class="feat__tag">RTR Part 2</span><h3>Post-exam RTR Part 2 sharing</h3><p>The same recalled-question practice, carried on for RTR Part 2 after the examination moved under the DGCA.</p></article>
+        <article class="feat"><span class="feat__tag">Industry</span><h3>Changing the conversation</h3><p>Exam resources, predicted papers and reality-based discussion we introduced are now common across academies, FTOs and social platforms.</p></article>
+      </div>
+      <p class="note">Recalled questions are student-reported, unofficial practice material, not DGCA papers. The 85–89% figure is reported question overlap, not a guarantee of results.</p>
+    </section>
+
+    <!-- 30,000 FT: a note from the flight deck -->
+    <section class="deck" id="deck" data-stage="sky">
+      <p class="eyebrow">08 · A note from the flight deck</p>
+      <blockquote class="deck__quote" id="deckQuote">The name is evolving. The vision is expanding. But the purpose <em>remains the same.</em></blockquote>
+      <p class="deck__by"><span></span>The founder, AviationSpot360</p>
+      <p class="deck__letter">I started AviationSpot on 5 April 2024 as one person with no audience, no team and no certainty about where it would go. I knew one thing: students deserved better information and an honest picture of the aviation industry. To every student and parent who has trusted us, thank you. We are here to share realities and help you decide with clarity.</p>
+      <div class="meaning">
+        <div><b>Aviation</b><p>The industry: its knowledge, opportunities and realities.</p></div>
+        <div><b>Spot</b><p>One place to discover, access and exchange meaningful aviation information.</p></div>
+        <div><b><em>360</em></b><p>The complete perspective, from the first aspiration to professional development.</p></div>
+      </div>
+      <ul class="values" aria-label="Our non-negotiables">
+        <li>Transparency in communication</li><li>Independence in judgement</li><li>Respect for evidence</li><li>Consistency in contribution</li><li>Awareness before influence</li>
+      </ul>
     </section>
 
     <!-- FL350: boarding pass -->
     <section class="signup" id="board" data-stage="sky">
-      <p class="eyebrow">07 · Cruise · FL350</p>
+      <p class="eyebrow">09 · Cruise · FL350</p>
       <h2 class="reveal">Claim your<br/>boarding pass.</h2>
 
       <div class="pass-stage" id="passStage">
@@ -198,6 +257,7 @@
 
   <footer class="footer">
     <img class="footer__logo" src="brand/logo-white.svg" alt="AviationSpot360 — The Airspace of Awareness" loading="lazy" />
+    <p class="footer__sign">One industry. Every perspective. Complete awareness.<br/><em>Beyond aviation dreams. Into aviation reality.</em></p>
     <div class="footer__row">
       <p>© 2026 AviationSpot360 · Airspace of Awareness</p>
       <p class="credits">3D models: “Airbus A320” by OUTPISTON (CC BY-NC-SA 4.0) · “Jet Engine” by Pilot · “Radar Turret” by 1738 Creations · “Cessna 182 Skylane” by VTX (CC BY-NC-SA 4.0) · “Gulfstream G650ER” by Luca Martina (CC BY 4.0), via Sketchfab</p>
@@ -207,6 +267,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
   <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script type="module" src="main.js?v=42"></script>
+  <script type="module" src="main.js?v=45"></script>
 </body>
 </html>

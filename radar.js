@@ -1,4 +1,4 @@
-// "Radar contact": an airport surveillance radar on its mast at dusk, plus a synced 2D scope.
+// The radar stage: an airport surveillance radar on its mast at dusk, where the brand story begins.
 // The source model ("Radar Turret") is one untextured mesh; we split off the rotating head and
 // paint it in vertex colours modelled on real ASR/SSR installations.
 import * as THREE from 'three';
@@ -221,7 +221,7 @@ export function createRadarStage({ envMap, loader, isSmall }) {
     radar.position.y = -30 * (1 - e);
     radar.rotation.y = (1 - e) * 0.9;
     sweep += dt * (reduceMotion ? 0.25 : SPIN) * (0.12 + 0.88 * e);
-    head.rotation.y = -sweep; // clockwise seen from above, like the scope
+    head.rotation.y = -sweep; // clockwise seen from above
     const power = clamp01((presence - 0.55) / 0.45);
     beamMat.uniforms.uStrength.value = 0.09 * power;
     const on = Math.sin(time * Math.PI * 1.2) > 0.2 ? 1 : 0.15; // ~0.6 s blink
@@ -237,78 +237,5 @@ export function createRadarStage({ envMap, loader, isSmall }) {
     const left = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a)); // screen-left of the radar
     camera.lookAt(left.multiplyScalar(wide ? 7 : 0).add(new THREE.Vector3(0, aimY, 0)));
   }
-  return { scene, camera, update, sweepAngle: () => sweep };
-}
-
-/* ---------- 2D scope (PPI), sweep synced to the antenna ---------- */
-const TARGETS = [{ r: 0.62, a: 0.9 }, { r: 0.4, a: 2.4 }, { r: 0.82, a: 3.6 }, { r: 0.3, a: 4.7 }, { r: 0.7, a: 5.6 }];
-export function createScope(canvas) {
-  const g = canvas.getContext('2d');
-  let size = 0;
-  function fit() {
-    const dpr = Math.min(devicePixelRatio, 2);
-    size = canvas.clientWidth;
-    canvas.width = canvas.height = Math.round(size * dpr);
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  const TAU = Math.PI * 2;
-  function draw(sweep, time, presence = 1) {
-    if (canvas.clientWidth !== size) fit();
-    const s = size, c = s / 2, R = c - 6;
-    g.clearRect(0, 0, s, s);
-    if (presence <= 0) return;
-    const contact = presence > 0.85; // our blip tags up once the radar is fully on
-    const bg = g.createRadialGradient(c, c, 0, c, c, R);
-    bg.addColorStop(0, '#062418');
-    bg.addColorStop(1, '#020c08');
-    g.fillStyle = bg;
-    g.beginPath(); g.arc(c, c, R, 0, TAU); g.fill();
-
-    g.strokeStyle = 'rgba(110, 255, 185, .18)';
-    g.lineWidth = 1;
-    // range rings power on from the centre outwards
-    for (const k of [0.25, 0.5, 0.75, 1]) { if (presence < k * 0.8) continue; g.beginPath(); g.arc(c, c, R * k, 0, TAU); g.stroke(); }
-    g.beginPath(); g.moveTo(c - R, c); g.lineTo(c + R, c); g.moveTo(c, c - R); g.lineTo(c, c + R); g.stroke();
-    for (let d = 0; d < 360; d += 10) {
-      const a = (d * Math.PI) / 180 - Math.PI / 2, len = d % 30 ? 4 : 8;
-      g.beginPath();
-      g.moveTo(c + Math.cos(a) * R, c + Math.sin(a) * R);
-      g.lineTo(c + Math.cos(a) * (R - len), c + Math.sin(a) * (R - len));
-      g.stroke();
-    }
-
-    // sweep with a fading afterglow trailing behind it
-    const head = (sweep % TAU) - Math.PI / 2;
-    const trail = g.createConicGradient(head - 1.1, c, c);
-    trail.addColorStop(0, 'rgba(110, 255, 185, 0)');
-    trail.addColorStop(1.1 / TAU, 'rgba(110, 255, 185, .32)');
-    trail.addColorStop(1.1 / TAU + 0.001, 'rgba(110, 255, 185, 0)');
-    g.fillStyle = trail;
-    g.beginPath(); g.moveTo(c, c); g.arc(c, c, R, head - 1.1, head); g.closePath(); g.fill();
-    g.strokeStyle = 'rgba(160, 255, 210, .9)';
-    g.lineWidth = 1.5;
-    g.beginPath(); g.moveTo(c, c); g.lineTo(c + Math.cos(head) * R, c + Math.sin(head) * R); g.stroke();
-
-    // blips glow when the sweep passes, then fade until the next pass
-    const ours = { r: 0.5 + Math.sin(time * 0.05) * 0.08, a: 1.75, label: 'AS360', own: true };
-    g.font = `600 ${Math.max(9, s * 0.036)}px "JetBrains Mono", monospace`;
-    g.globalAlpha = clamp01((presence - 0.5) / 0.5);
-    for (const tg of [...TARGETS, ours]) {
-      const since = (((sweep - tg.a) % TAU) + TAU) % TAU; // radians since last painted
-      const lit = Math.exp(-since * 0.9);
-      const a = tg.a - Math.PI / 2;
-      const x = c + Math.cos(a) * R * tg.r, y = c + Math.sin(a) * R * tg.r;
-      const isContact = tg.own && contact;
-      g.fillStyle = isContact ? `rgba(76, 195, 245, ${0.45 + lit * 0.55})` : `rgba(130, 255, 195, ${0.15 + lit * 0.85})`;
-      g.beginPath(); g.arc(x, y, isContact ? 3.6 : 2.6, 0, TAU); g.fill();
-      if (!tg.label) continue;
-      g.strokeStyle = g.fillStyle;
-      g.lineWidth = 1;
-      g.beginPath(); g.moveTo(x, y); g.lineTo(x + 12, y - 12); g.stroke();
-      g.fillText(tg.label, x + 14, y - 14);
-      if (tg.own) g.fillText(isContact ? '350 ↑' : '060 ↑', x + 14, y - 14 + s * 0.045);
-    }
-    g.globalAlpha = 1;
-  }
-  return { draw };
+  return { scene, camera, update };
 }

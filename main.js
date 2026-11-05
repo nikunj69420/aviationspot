@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
-import { createRadarStage, createScope } from './radar.js?v=12';
+import { createRadarStage } from './radar.js?v=13';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -43,7 +43,10 @@ const KEYS = [
   { stage: 'engine', p: [3.8, 0.4, -2], r: [-0.3, -0.5, 0.06], s: 1, cy: -4, alt: 8000, sky: ['#040a17', '#0a1830', '#13284d'] },
   { stage: 'sky', p: [3.5, 0.2, -1.5], r: [-0.08, -0.32, 0.04], s: 1.1, cy: -4.5, alt: 10000, sky: ['#12397a', '#3f7ccb', '#a9cdee'] },
   { stage: 'radar', p: [9, 6, -14], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -7, alt: 14000, sky: ['#0a1230', '#2b2c55', '#b8684a'] },
-  { stage: 'sky', p: [5.2, 3.9, -13], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -6.5, alt: 18000, sky: ['#0a2456', '#23559e', '#6f9fd6'] },
+  // story + impact: the A320 climbs out of frame so the reading sections stay clean
+  { stage: 'sky', pm: [0, 18, -30], p: [-4, 15, -30], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -6.5, alt: 18000, sky: ['#0a2456', '#23559e', '#6f9fd6'] },
+  { stage: 'sky', pm: [0, 18, -30], p: [4, 15, -30], r: [0.18, -0.4, 0.06], s: 1, cy: -9.5, alt: 24000, sky: ['#0a1d48', '#2c4f8f', '#9a9fc4'] },
+  { stage: 'sky', pm: [1.5, 7, -8], p: [5.6, 3.2, -9], r: [0.14, -0.3, 0.05], s: 1, cy: -10, alt: 30000, sky: ['#0a1838', '#40477e', '#d0906a'] },
   { stage: 'sky', pm: [1.5, 7, -6], p: [3.4, 2.3, -4], r: [0.12, -0.35, 0.05], s: 1.05, cy: -8, alt: 35000, sky: ['#0a1838', '#6b4a7a', '#f3a35a'] },
   { stage: 'sky', p: [10, 5.5, -5], r: [0.1, -0.2, 0.12], s: 1, cy: -8, alt: 35000, sky: ['#071226', '#3a3566', '#d98a4f'] },
 ];
@@ -463,7 +466,7 @@ function updateSky(dt, time, target, ease) {
 
   // contrails get thicker the higher we fly
   const k = target.i + target.t;
-  const trailVis = plane.visible ? Math.max(range(k, 1.6, 2.4) * (1 - range(k, 7.4, 8)), departure.t > 0 ? 1 : 0) : 0;
+  const trailVis = plane.visible ? Math.max(range(k, 1.6, 2.4) * (1 - range(k, 9.4, 10)), departure.t > 0 ? 1 : 0) : 0;
   fwd.set(1, 0, 0).applyQuaternion(plane.quaternion);
   for (let e = 0; e < 2; e++) {
     const idx = e * TRAIL + trailHead;
@@ -487,11 +490,11 @@ function updateSky(dt, time, target, ease) {
   trailGeo.attributes.alpha.needsUpdate = true;
   trailGeo.attributes.size.needsUpdate = true;
 
-  stars.material.opacity = range(k, 6.4, 7.2) * 0.85;
+  stars.material.opacity = range(k, 8.4, 9.2) * 0.85;
   flareLight.intensity = 1;
-  flare.visible = k < 0.9 || k > 6.5;
+  flare.visible = k < 0.9 || k > 8.5;
 
-  // G650 crosses right → left behind the departure board
+  // G650 crosses right → left behind the flight log
   const jt = clamp01((k - 5.45) / 1.3);
   jet.visible = jet.children.length > 0 && jt > 0 && jt < 1;
   if (jet.visible) {
@@ -555,8 +558,6 @@ function updateEngine(dt) {
 
 const radarSec = document.getElementById('radar');
 const radarCopy = radarSec.querySelector('.radar__copy');
-const scopeEl = document.getElementById('scope');
-const scope = createScope(scopeEl);
 const RADAR_K = KEYS.findIndex((key) => key.stage === 'radar');
 function updateRadar(dt, time, k) {
   const p = stickyProgress(radarSec);
@@ -565,9 +566,6 @@ function updateRadar(dt, time, k) {
   radar.update({ p, dt, time, pointer, reduceMotion, presence });
   radarCopy.style.opacity = presence;
   radarCopy.style.transform = `translateY(${(1 - presence) * 40}px)`;
-  scopeEl.style.opacity = presence;
-  scopeEl.style.transform = `scale(${0.7 + 0.3 * presence}) rotate(${(1 - presence) * -50}deg)`;
-  scope.draw(radar.sweepAngle(), time, presence);
 }
 
 function frame() {
@@ -733,36 +731,51 @@ showExam(0, false);
 gsap.from('.auth__item, .auth__more', { y: 30, opacity: 0, duration: 1, stagger: 0.08, ease: 'expo.out', scrollTrigger: { trigger: '.auth', start: 'top 85%' } });
 gsap.from(panelEl, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: '.auth', start: 'top 85%' } });
 
-// Departure board with split-flap characters
-const DEPARTURES = [
-  ['14 NOV', '19:00', 'DGCA Air Navigation: live doubt session', 'WEBINAR', 'ON TIME'],
-  ['21 NOV', '18:30', 'Cadet pilot selection: what to expect', 'ONLINE', 'BOARDING'],
-  ['05 DEC', '20:00', 'SACAA pathway Q&A', 'WEBINAR', 'SCHEDULED'],
-  ['12 DEC', '19:00', '1:1 mentorship slots open', 'BOOKING', 'OPEN'],
-];
-const flap = (s) => `<span class="flap">${[...s].map((c) => `<i>${c === ' ' ? '&nbsp;' : c}</i>`).join('')}</span>`;
-document.getElementById('departures').innerHTML =
-  `<div class="dep dep--head"><span>DATE</span><span>IST</span><span>SESSION</span><span>FORMAT</span><span>STATUS</span></div>` +
-  DEPARTURES.map(([d, tm, title, f, s]) =>
-    `<div class="dep">${flap(d)}${flap(tm)}<span class="dep__title">${title}</span><span>${flap(f)}</span><span class="dep__status">${s}</span></div>`).join('');
-const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:';
-ScrollTrigger.create({
-  trigger: '.departures', start: 'top 80%', once: true,
-  onEnter: () => {
-    gsap.from('.dep:not(.dep--head)', { opacity: 0, x: -40, duration: 0.9, stagger: 0.12, ease: 'expo.out' });
-    document.querySelectorAll('.flap i').forEach((cell, n) => {
-      const final = cell.textContent;
-      if (final.trim() === '' || reduceMotion) return;
-      let flips = 6 + (n % 7);
-      const tick = () => {
-        if (flips-- <= 0) { cell.textContent = final; return; }
-        cell.textContent = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-        gsap.fromTo(cell, { rotateX: -90 }, { rotateX: 0, duration: 0.07, ease: 'none', onComplete: tick });
-      };
-      gsap.delayedCall(n * 0.02, tick);
-    });
-  },
+// Flight log: the rail fills as you read, and the leg in the middle of the screen lights up
+const logItems = [...document.querySelectorAll('.log__item')];
+const logNo = document.getElementById('logNo');
+gsap.to('#logRail', { scaleY: 1, ease: 'none', scrollTrigger: { trigger: '#log', start: 'top 60%', end: 'bottom 60%', scrub: true } });
+logItems.forEach((item, i) => {
+  ScrollTrigger.create({
+    trigger: item, start: 'top 62%', end: 'bottom 62%',
+    onToggle: (self) => {
+      item.classList.toggle('is-on', self.isActive);
+      if (self.isActive) logNo.textContent = String(i + 1).padStart(2, '0');
+    },
+  });
+  gsap.from(item.querySelector('.log__body'), { x: 40, duration: 1.1, ease: 'expo.out', scrollTrigger: { trigger: item, start: 'top 85%' } });
 });
+
+// Impact: numbers count up, achievement cards rise in
+document.querySelectorAll('[data-count]').forEach((el) => {
+  const end = +el.dataset.count, n = { v: 0 };
+  el.textContent = '0';
+  gsap.to(n, {
+    v: end, duration: 2.2, ease: 'power3.out',
+    scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+    onUpdate: () => (el.textContent = Math.round(n.v).toLocaleString('en-IN')),
+  });
+});
+gsap.from('.stat', { y: 40, opacity: 0, duration: 1.1, stagger: 0.08, ease: 'expo.out', scrollTrigger: { trigger: '.stats', start: 'top 85%' } });
+gsap.from('.feat', { y: 70, opacity: 0, duration: 1.2, stagger: 0.06, ease: 'expo.out', scrollTrigger: { trigger: '.feats', start: 'top 85%' } });
+
+// Flight deck note: the founder's line brightens word by word as it scrolls past
+const quote = document.getElementById('deckQuote');
+const words = (s) => s.replace(/(\S+)/g, '<span class="w">$1</span>');
+quote.querySelectorAll('em').forEach((em) => (em.innerHTML = words(em.textContent)));
+[...quote.childNodes].forEach((node) => {
+  if (node.nodeType !== 3) return;
+  const tmpEl = document.createElement('span');
+  tmpEl.innerHTML = words(node.textContent);
+  node.replaceWith(...tmpEl.childNodes);
+});
+gsap.fromTo(quote.querySelectorAll('.w'), { opacity: 0.16 }, {
+  opacity: 1, stagger: 0.1, ease: 'none',
+  scrollTrigger: { trigger: quote, start: 'top 80%', end: 'bottom 45%', scrub: true },
+});
+gsap.from('.deck__by, .deck__letter', { y: 30, opacity: 0, duration: 1.1, stagger: 0.1, ease: 'expo.out', scrollTrigger: { trigger: '.deck__by', start: 'top 88%' } });
+gsap.from('.meaning > div', { y: 50, opacity: 0, duration: 1.2, stagger: 0.1, ease: 'expo.out', scrollTrigger: { trigger: '.meaning', start: 'top 85%' } });
+gsap.from('.values li', { y: 20, opacity: 0, scale: 0.92, duration: 0.8, stagger: 0.06, ease: 'back.out(2)', scrollTrigger: { trigger: '.values', start: 'top 90%' } });
 
 // Boarding pass: 3D tilt, glare and holographic foil that follow the pointer
 function tiltPass(card) {
