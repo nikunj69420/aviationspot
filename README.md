@@ -17,6 +17,7 @@ Then open http://localhost:5173. (`tools/serve.py` is a plain static server that
 - `index.html`, `style.css`, `main.js`: the page, styles and all scroll/3D logic
 - `aviationspot-logo.svg`: the official logo (source). `brand/` holds the web versions built from it by `tools/logo_build.py`: `logo.svg` (navy, for light backgrounds), `logo-white.svg` and `logo-white-wordmark.svg` (for the dark site) and `favicon.svg`. The build outlines the logo's text (its fonts are Windows-only) and makes the radar "o" sweep
 - Theme: navy `#0b163a` / `#111c44` and sky cyan `#00a2e5`, taken from the logo (`--brand-navy`, `--navy-2`, `--accent` in `style.css`)
+- `globe.js`: the exam section's globe: dotted land, VABB → FAOR and VABB → KJFK great-circle routes, flown by a small aircraft; the authority tabs spin it to each route. Land dots are baked from Natural Earth (via world-atlas) by `tools/build_globe_dots.mjs` into `assests/globe/land.json`
 - `headset.js`: the transmission scene that opens the brand story (05): the AviationSpot360 pilot headset with radio rings; the radio panel and the tower call are DOM, driven from `main.js`
 - `tools/headset_livery.py`: paints the headset in brand navy and cyan with the logo emblem on each ear cup, placed from the mesh's own UV mapping (then rebuild `assests/headphones/headphones.glb` with `tools/compress_models.py`)
 - Story, impact and founder sections (05–08) carry the brand story and achievements: the flight log, stats, achievements and the note from the flight deck

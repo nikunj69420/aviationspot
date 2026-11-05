@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,600..800&family=Noto+Serif:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=34" />
+  <link rel="stylesheet" href="style.css?v=35" />
   <script type="importmap">
     { "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
@@ -111,6 +111,7 @@
       <p class="eyebrow">04 · Above the clouds</p>
       <h2 class="reveal">Exam spaces,<br/>built per authority.</h2>
       <div class="auth">
+        <div class="auth__side">
         <div class="auth__list" role="tablist" aria-label="Examination authority">
           <button class="auth__item" role="tab" aria-selected="true" data-i="0"><span class="auth__flag"><svg class="flag" viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="6.67" fill="#FF9933"/><rect y="6.67" width="30" height="6.67" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#138808"/><g stroke="#000080" stroke-width=".3"><line x1="17.40" y1="10.00" x2="12.60" y2="10.00"/><line x1="17.32" y1="10.62" x2="12.68" y2="9.38"/><line x1="17.08" y1="11.20" x2="12.92" y2="8.80"/><line x1="16.70" y1="11.70" x2="13.30" y2="8.30"/><line x1="16.20" y1="12.08" x2="13.80" y2="7.92"/><line x1="15.62" y1="12.32" x2="14.38" y2="7.68"/><line x1="15.00" y1="12.40" x2="15.00" y2="7.60"/><line x1="14.38" y1="12.32" x2="15.62" y2="7.68"/><line x1="13.80" y1="12.08" x2="16.20" y2="7.92"/><line x1="13.30" y1="11.70" x2="16.70" y2="8.30"/><line x1="12.92" y1="11.20" x2="17.08" y2="8.80"/><line x1="12.68" y1="10.62" x2="17.32" y2="9.38"/></g><circle cx="15" cy="10" r="2.6" fill="none" stroke="#000080" stroke-width=".45"/><circle cx="15" cy="10" r=".55" fill="#000080"/></svg></span><span class="auth__txt"><b>India</b><small>DGCA · VABB</small></span><svg class="auth__arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           <button class="auth__item" role="tab" aria-selected="false" data-i="1"><span class="auth__flag"><svg class="flag" viewBox="0 0 90 60" aria-hidden="true"><rect width="90" height="30" fill="#DE3831"/><rect y="30" width="90" height="30" fill="#002395"/><path d="M0 0 36 30 0 60M36 30H90" fill="none" stroke="#fff" stroke-width="20"/><path d="M0 0 36 30 0 60Z" fill="#FFB612"/><path d="M0 12 21 30 0 48Z" fill="#000"/><path d="M0 0 36 30 0 60M36 30H90" fill="none" stroke="#007749" stroke-width="12"/></svg></span><span class="auth__txt"><b>South Africa</b><small>SACAA · FAOR</small></span><svg class="auth__arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -118,6 +119,15 @@
           <p class="auth__more"><span></span>More authorities coming</p>
         </div>
         <div class="exam" id="examPanel" role="tabpanel"></div>
+        </div>
+        <div class="globe" id="globe" aria-hidden="true">
+          <canvas></canvas>
+          <div class="globe__labels">
+            <span data-code="VABB"><b>VABB</b> Mumbai · DGCA</span>
+            <span data-code="FAOR"><b>FAOR</b> Johannesburg · SACAA</span>
+            <span data-code="KJFK"><b>KJFK</b> New York · FAA</span>
+          </div>
+        </div>
       </div>
       <p class="note">Practice spaces are independent simulations, not official examination systems.</p>
     </section>
@@ -317,6 +327,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
   <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script type="module" src="main.js?v=53"></script>
+  <script type="module" src="main.js?v=55"></script>
 </body>
 </html>

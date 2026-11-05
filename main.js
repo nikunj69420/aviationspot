@@ -4,6 +4,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 import { createHeadsetStage } from './headset.js?v=3';
+import { createGlobe } from './globe.js?v=2';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -41,7 +42,8 @@ const KEYS = [
   { stage: 'cockpit', p: [-9, 4, -8], r: [0.2, -2.6, 0.3], s: 1, cy: 6, alt: 400, sky: ['#14214a', '#5b5a8f', '#f3a274'] },
   { stage: 'sky', p: [1.2, 1.8, -10], r: [0.25, 1.1, 0.12], s: 1, cy: -3.2, alt: 5000, sky: ['#2a63b4', '#6aa3dc', '#d6e8f6'] },
   { stage: 'engine', p: [3.8, 0.4, -2], r: [-0.3, -0.5, 0.06], s: 1, cy: -4, alt: 8000, sky: ['#040a17', '#0a1830', '#13284d'] },
-  { stage: 'sky', p: [3.5, 0.2, -1.5], r: [-0.08, -0.32, 0.04], s: 1.1, cy: -4.5, alt: 10000, sky: ['#12397a', '#3f7ccb', '#a9cdee'] },
+  // exams: the A320 climbs out of frame so the globe has the right side to itself
+  { stage: 'sky', pm: [0, 18, -30], p: [2, 15, -30], r: [-0.08, -0.32, 0.04], s: 1.1, cy: -4.5, alt: 10000, sky: ['#12397a', '#3f7ccb', '#a9cdee'] },
   { stage: 'headset', p: [9, 6, -14], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -7, alt: 14000, sky: ['#0a1230', '#2b2c55', '#b8684a'] },
   // story + impact: the A320 climbs out of frame so the reading sections stay clean
   { stage: 'sky', pm: [0, 18, -30], p: [-4, 15, -30], r: [0.3, Math.PI + 0.45, 0.08], s: 1, cy: -6.5, alt: 18000, sky: ['#0a2456', '#23559e', '#6f9fd6'] },
@@ -802,12 +804,10 @@ const ARROW = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11m-4-
 function showExam(i, animate = true) {
   tabs.forEach((t, j) => t.setAttribute('aria-selected', String(i === j)));
   const e = EXAMS[i];
-  const flag = tabs[i].querySelector('.auth__flag').outerHTML;
   const render = () => {
     panelEl.style.setProperty('--band', e.band);
     panelEl.style.setProperty('--glow', e.glow);
-    panelEl.innerHTML = `<div class="exam__code">${e.code}</div>`
-      + `<div class="exam__head">${flag}<h3>${e.name}</h3></div><p>${e.text}</p>`
+    panelEl.innerHTML = `<div class="exam__code">${e.code}</div><p>${e.text}</p>`
       + `<ul class="exam__chips">${e.chips.map((c) => `<li>${c}</li>`).join('')}</ul>`
       + `<div class="exam__foot"><span class="exam__status"><i></i>Opens in Phase 2</span>`
       + `<a class="exam__cta" href="#board">Get notified ${ARROW}</a></div>`;
@@ -821,10 +821,13 @@ function showExam(i, animate = true) {
     .to(panelEl.children, { opacity: 0, y: -10, duration: 0.2, stagger: 0.02, ease: 'power2.in', onComplete: render })
     .add(() => gsap.from(panelEl.children, { opacity: 0, y: 18, duration: 0.6, stagger: 0.05, ease: 'expo.out' }));
 }
-tabs.forEach((t) => t.addEventListener('click', () => showExam(+t.dataset.i)));
+// the globe flies to each authority's route (India: both routes out of Mumbai)
+const globe = createGlobe({ host: document.getElementById('globe'), labels: document.querySelector('.globe__labels'), reduceMotion, gsap });
+tabs.forEach((t) => t.addEventListener('click', () => { showExam(+t.dataset.i); globe.focus(+t.dataset.i); }));
 showExam(0, false);
 gsap.from('.auth__item, .auth__more', { y: 30, opacity: 0, duration: 1, stagger: 0.08, ease: 'expo.out', scrollTrigger: { trigger: '.auth', start: 'top 85%' } });
 gsap.from(panelEl, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: '.auth', start: 'top 85%' } });
+gsap.from('#globe', { scale: 0.6, opacity: 0, rotate: -20, duration: 1.8, ease: 'expo.out', scrollTrigger: { trigger: '.auth', start: 'top 80%' } });
 
 // Flight log: the rail fills as you read, and the leg in the middle of the screen lights up
 const logItems = [...document.querySelectorAll('.log__item')];
