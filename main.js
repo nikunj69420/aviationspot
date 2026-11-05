@@ -264,60 +264,48 @@ jet.visible = false;
 sky.scene.add(jet);
 
 /* =========================================================
-   Stage 2: COCKPIT — inside the Cessna 182 Skylane
+   Stage 2: COCKPIT — the A320 flight deck, from the captain's seat
    ========================================================= */
-// kept in real metres: nose points -Z, panel ~1 m behind the prop, pilot's eye ≈ (-0.2, 0.56, -0.1)
-const cockpit = { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(42, 1, 0.02, 200) };
+// kept in the model's own units (≈ 0.3 m): nose points -Z, captain on the left (-X),
+// main panel ≈ z -10, throttle quadrant ≈ (0, -2, -9.5), overhead panel from z -9 back over the seats
+const cockpit = { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(46, 1, 0.05, 400) };
 cockpit.scene.environment = envMap;
-cockpit.scene.add(new THREE.HemisphereLight(0xffe9d0, 0x1b2140, 1.0));
-const cpKey = new THREE.DirectionalLight(0xffc98f, 2.6); // low dawn sun ahead
-cpKey.position.set(-4, 6, -8);
+cockpit.scene.add(new THREE.HemisphereLight(0xdfe9ff, 0x1b2140, 1.1));
+const cpKey = new THREE.DirectionalLight(0xffd2a0, 2.4); // low dawn sun ahead, through the windshield
+cpKey.position.set(-6, 12, -40);
 cockpit.scene.add(cpKey);
-const cpFill = new THREE.DirectionalLight(0x9cc4ff, 0.9);
-cpFill.position.set(5, 2, 6);
+const cpFill = new THREE.DirectionalLight(0x9cc4ff, 1.0);
+cpFill.position.set(8, 6, 10);
 cockpit.scene.add(cpFill);
-const cabinLight = new THREE.PointLight(0xffe2c0, 1.6, 2.5); // so the panel reads from the seat
-cabinLight.position.set(-0.1, 0.55, 0.1);
+const cabinLight = new THREE.PointLight(0xfff1dc, 30, 16); // flight deck dome light so the panels read
+cabinLight.position.set(-0.5, 2.6, -5.5);
 cockpit.scene.add(cabinLight);
-const cessna = new THREE.Group();
-cockpit.scene.add(cessna);
-let propeller = null;
-// starts downloading straight away, but the loading screen doesn't wait for it (it's the biggest file)
-lazyLoader.load('assests/c182/c182.glb', (gltf) => {
+const flightDeck = new THREE.Group();
+cockpit.scene.add(flightDeck);
+// starts downloading straight away, but the loading screen doesn't wait for it
+lazyLoader.load('assests/a320_cockpit/a320_cockpit.glb?v=1', (gltf) => {
   const m = gltf.scene;
-  m.updateMatrixWorld(true);
-  const prop = m.getObjectByName('Object_192');
-  if (prop) {
-    // re-pivot the propeller on its hub so it can spin about the nose axis
-    propeller = new THREE.Group();
-    propeller.position.copy(new THREE.Box3().setFromObject(prop).getCenter(new THREE.Vector3()));
-    m.add(propeller);
-    propeller.attach(prop);
-  }
-  // The G1000 PFD and MFD ship as alpha-blended glass, flush with the bezel and with tinted cabin
-  // glass drawn over them, so they come out black. Show them as pure emitted light (the display
-  // image), drawn after the glass, so the moving map and flight display read.
-  const screens = [];
-  m.traverse((o) => { if (o.isMesh && ['material', 'material_18'].includes(o.material.name)) screens.push(o); });
-  for (const o of screens) {
-    const display = o.material.emissiveMap;
-    display.colorSpace = THREE.SRGBColorSpace;
-    o.material = new THREE.MeshBasicMaterial({ map: display, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -4, transparent: true, depthWrite: true });
-    o.material.color.setScalar(0.92); // a touch under full white so it doesn't glare
-    o.renderOrder = 10;
-  }
-  cessna.add(m);
+  m.traverse((o) => {
+    if (!o.isMesh) return;
+    const mat = o.material;
+    mat.envMapIntensity = 0.6;
+    if (!mat.map) return;
+    mat.map.anisotropy = 8;
+    // the panel artwork (displays, annunciators) glows a little, like a lit flight deck at dawn
+    if (!mat.emissiveMap) { mat.emissive = new THREE.Color(0xffffff); mat.emissiveMap = mat.map; mat.emissiveIntensity = 0.28; }
+  });
+  flightDeck.add(m);
 });
 
-// camera beats, all inside the cabin: [progress, eye, target]
+// camera beats from the captain's seat: [progress, eye, target]
 const CP_PATH = [
-  [0.0, [-0.17, 0.42, -0.48], [-0.17, 0.37, -1.05]], // nose-to-glass with the G1000 PFD
-  [0.18, [-0.17, 0.43, -0.42], [-0.15, 0.37, -1.05]],
-  [0.42, [-0.2, 0.56, -0.08], [-0.02, 0.3, -1.1]],    // back into the left seat: the whole panel
-  [0.6, [-0.2, 0.56, -0.1], [0.02, 0.31, -1.1]],
-  [0.7, [-0.2, 0.58, -0.12], [-0.2, 0.7, -3.0]],     // look up and out through the windshield
-  [0.8, [-0.2, 0.58, -0.14], [-0.2, 0.74, -3.0]],
-  [1.0, [-0.2, 0.75, -4.5], [-0.2, 1.0, -14]],      // fly out ahead of the aircraft
+  [0.0, [-3.2, 0.3, -7.6], [-3.3, -0.15, -10.5]],  // nose-to-glass with the captain's PFD and ND
+  [0.18, [-3.0, 0.45, -7.2], [-2.9, -0.1, -10.5]],
+  [0.4, [-2.6, 1.2, -4.8], [-1.2, -0.4, -10.5]],   // back into the seat: the whole panel
+  [0.55, [-2.6, 1.2, -4.9], [0.2, -1.6, -9.5]],    // across to the thrust levers
+  [0.7, [-2.4, 1.3, -5.0], [-0.5, 3.5, -6.5]],     // up to the overhead panel
+  [0.84, [-2.4, 1.3, -5.2], [-1.5, 2.2, -20]],     // out through the windshield
+  [1.0, [-2.0, 2.6, -11.0], [-1.6, 2.8, -40]],     // and up to the glass, handing over to the sky
 ];
 const cpEye = new THREE.Vector3(), cpTarget = new THREE.Vector3();
 function cockpitPose(p) {
@@ -509,17 +497,15 @@ function updateSky(dt, time, target, ease) {
   sky.scene.fog.color.copy(target.sky[1]);
 }
 
-function updateCockpit(dt) {
+function updateCockpit() {
   const p = stickyProgress(cockpitSec);
-  if (propeller && !reduceMotion) propeller.rotation.z += dt * 28;
-
   cockpitPose(p);
   const cam = cockpit.camera;
   // pointer parallax: a small head turn from the seat
-  cam.position.copy(cpEye).add(tmp.set(pointer.x * 0.12, -pointer.y * 0.06, 0));
-  cam.lookAt(cpTarget.x + pointer.x * 0.3, cpTarget.y - pointer.y * 0.2, cpTarget.z);
+  cam.position.copy(cpEye).add(tmp.set(pointer.x * 0.3, -pointer.y * 0.15, 0));
+  cam.lookAt(cpTarget.x + pointer.x * 0.8, cpTarget.y - pointer.y * 0.5, cpTarget.z);
   // portrait screens: widen the lens so the panel still fits from the seat
-  const fov = cam.aspect < 1 ? 62 : 42;
+  const fov = cam.aspect < 1 ? 68 : 46;
   if (cam.fov !== fov) { cam.fov = fov; cam.updateProjectionMatrix(); }
   lines.forEach((l, i) => {
     const c = 0.12 + i * 0.27;
@@ -685,7 +671,7 @@ function frame() {
   altFill.style.height = `${(cur.alt / 35000) * 100}%`;
 
   updateSky(dt, time, target, ease); // always runs so the A320 keeps its place
-  if (stage === 'cockpit') updateCockpit(dt);
+  if (stage === 'cockpit') updateCockpit();
   if (stage === 'headset') updateHeadset(dt, time, target.i + target.t);
   if (stage === 'engine') updateEngine(dt);
   else labels.forEach((el) => (el.style.opacity = 0));

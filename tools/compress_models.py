@@ -4,7 +4,7 @@ Two passes per model:
   1. textures -> WebP (Pillow), resized to what is actually visible, registered via EXT_texture_webp
   2. geometry -> meshopt-compressed single .glb (gltf-transform, run by npx)
 Node and material names are kept, because main.js looks some of them up by name
-(the Cessna's propeller "Object_192" and its G1000 screen materials).
+(previously the Cessna's; node and material names stay targetable).
 
 Run from the project root:  python -I tools/compress_models.py [output.glb ...]
 Needs Node (npx) for gltf-transform. Writes the .glb files listed in MODELS.
@@ -22,19 +22,23 @@ ROOT = Path(__file__).resolve().parent.parent
 GT = ["npx", "-y", "@gltf-transform/cli@4.2.1"]
 # source glTF, output glb, max texture size (keeps the cockpit panel/instruments sharp), extra flags
 MODELS = [
-    ("assests/c182/scene.gltf", "assests/c182/c182.glb", {"int1": 2048, "gauge": 2048, "*": 1024},
-     ["--join", "false", "--flatten", "false", "--instance", "false", "--palette", "false", "--simplify", "false"]),
     ("assests/jet_engine/scene.gltf", "assests/jet_engine/jet_engine.glb", {"*": 1024}, ["--simplify", "false"]),
     # only ever seen small and far away, so it can lose most of its triangles
     ("assests/src/gulfstream_g650er/scene.gltf", "assests/g650/g650.glb", {"*": 1024},
      ["--simplify-ratio", "0.2", "--simplify-error", "0.002"]),
     ("assests/a320/scene_as360.gltf", "assests/a320/a320.glb", {"*": 2048}, ["--simplify", "false"]),
+    # A320 flight deck (section 01): merged into few meshes, light simplification keeps switches crisp
+    ("assests/a320_cockpit/scene.gltf", "assests/a320_cockpit/a320_cockpit.glb", {"Panel": 2048, "*": 1024},
+     ["--simplify-ratio", "0.6", "--simplify-error", "0.0004"]),
     # the pilot headset, seen close up: the painted ear cups keep 2048 px, the mesh loses half its triangles
     ("assests/headphones/scene_as360.gltf", "assests/headphones/headphones.glb", {"normal": 512, "metallicRoughness": 512, "as360_metal": 2048, "*": 1024},
      ["--simplify-ratio", "0.5", "--simplify-error", "0.0005"]),
 ]
-# materials to strip before compressing, per output (none needed at the moment)
-DROP: dict = {}
+# materials to strip before compressing, per output
+DROP: dict = {
+    # two huge backdrop boxes wrapped round the A320 flight deck
+    "assests/a320_cockpit/a320_cockpit.glb": {"surfaceShader4", "lambert37"},
+}
 
 
 def drop_materials(g: dict, names: set) -> None:

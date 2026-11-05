@@ -21,7 +21,7 @@ Then open http://localhost:5173. (`tools/serve.py` is a plain static server that
 - `headset.js`: the transmission scene that opens the brand story (05): the AviationSpot360 pilot headset with radio rings; the radio panel and the tower call are DOM, driven from `main.js`
 - `tools/headset_livery.py`: paints the headset in brand navy and cyan with the logo emblem on each ear cup, placed from the mesh's own UV mapping (then rebuild `assests/headphones/headphones.glb` with `tools/compress_models.py`)
 - Story, impact and founder sections (05–08) carry the brand story and achievements: the flight log, stats, achievements and the note from the flight deck
-- `assests/*/*.glb`: the 3D models the site loads (meshopt-compressed, WebP textures): `a320`, `c182`, `jet_engine`, `headphones`, `g650`
+- `assests/*/*.glb`: the 3D models the site loads (meshopt-compressed, WebP textures): `a320`, `a320_cockpit`, `jet_engine`, `headphones`, `g650`
 - `tools/compress_models.py`: rebuilds those .glb files from the source glTFs (`python -I tools/compress_models.py`, needs Node for npx)
 - `tools/convert_jet_engine.py`: converts the jet engine's spec/gloss materials to metal/rough (run before compressing it)
 - `assests/atc_tower/delhi_atc_tower.glb`: the Delhi IGI Airport ATC tower (HOK, 101.9 m), modelled procedurally from photographs by `tools/build_delhi_tower.mjs` (`node tools/build_delhi_tower.mjs <node_modules with three@0.169.0>`); 1 unit = 1 m, not yet used on the page
@@ -30,14 +30,14 @@ Then open http://localhost:5173. (`tools/serve.py` is a plain static server that
 
 The early-access form isn't connected to a backend yet; nothing is sent.
 
-The page opens after ~0.7 MB (hero photo, A320); the Cessna, engine, headset and G650 stream in behind it (~8 MB). The large uncompressed sources are git-ignored and only needed to rebuild the .glb files.
+The page opens after ~0.7 MB (hero photo, A320); the A320 flight deck, engine, headset and G650 stream in behind it (~8 MB). The large uncompressed sources are git-ignored and only needed to rebuild the .glb files.
 
 ## 3D model credits
 
 - "Airbus A320" by OUTPISTON, CC BY-NC-SA 4.0
-- "Cessna 182 Skylane" by VTX, CC BY-NC-SA 4.0
+- A320 flight deck ("(Airbus A320) Airplane Cockpit"): source and licence still to be confirmed before launch
 - "Pilot Headphones" by valerij1987, CC BY 4.0 (repainted by `tools/headset_livery.py`)
 - "Jet Engine" by Pilot, CC BY 4.0 (converted to metal/rough by `tools/convert_jet_engine.py`)
 - "Gulfstream G650ER" by Luca Martina, CC BY 4.0
 
-All via Sketchfab. The two CC BY-NC-SA models don't allow commercial use; replace them or license them before a commercial launch.
+All via Sketchfab. The A320 exterior (CC BY-NC-SA) does not allow commercial use, and the flight deck's licence is unconfirmed; replace or license both before a commercial launch.
