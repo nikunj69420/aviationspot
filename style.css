@@ -261,13 +261,25 @@ main { overflow-x: clip; } /* slide-ins and the 3D pass tilt never widen the pag
 .stat b { display: block; font: 800 clamp(40px, 4.6vw, 68px)/1 var(--display); letter-spacing: -.04em; color: transparent; background: var(--grain), var(--matte); -webkit-background-clip: text; background-clip: text; font-variation-settings: "wdth" 88; margin-bottom: 12px; white-space: nowrap; }
 .stat p { color: var(--dim); font-size: 15px; max-width: 26ch; }
 .feats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-.feat { position: relative; padding: 26px 24px 28px; border-radius: 16px; background: linear-gradient(160deg, rgba(14, 38, 84, .62), rgba(7, 18, 38, .55)); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3); overflow: hidden; transition: transform .5s var(--ease), border-color .4s; }
-.feat::before { content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 100%; background: linear-gradient(90deg, var(--accent), transparent); transform: scaleX(.18); transform-origin: left; transition: transform .6s var(--ease); }
-.feat:hover { transform: translateY(-6px); border-color: rgba(0,162,229,.5); }
-.feat:hover::before { transform: scaleX(1); }
-.feat__tag { display: inline-block; font: 700 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2); padding: 5px 9px; border-radius: 6px; background: rgba(0,162,229,.12); margin-bottom: 18px; }
-.feat h3 { font: 800 21px/1.18 var(--display); letter-spacing: -.02em; margin-bottom: 10px; }
-.feat p { color: rgba(246, 248, 252, .78); font-size: 15px; line-height: 1.6; }
+/* achievement flip cards: icon + title on the front, the brief on the back */
+.feat { position: relative; height: 300px; perspective: 1200px; cursor: pointer; border-radius: 18px; outline: none; -webkit-tap-highlight-color: transparent; }
+.feat__inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .9s cubic-bezier(.3, 1.3, .4, 1); }
+.feat:hover .feat__inner { transform: rotateY(-8deg) translateY(-4px); }
+.feat.is-flipped .feat__inner { transform: rotateY(180deg); }
+.feat:focus-visible .feat__face { box-shadow: 0 0 0 2px var(--accent), 0 30px 60px -30px rgba(4, 12, 30, .6); }
+.feat__face { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 24px 24px 22px; border-radius: 18px; overflow: hidden; -webkit-backface-visibility: hidden; backface-visibility: hidden; border: 1px solid rgba(255,255,255,.14); box-shadow: 0 30px 60px -30px rgba(4, 12, 30, .6); }
+.feat__front { background: radial-gradient(circle at 50% 40%, rgba(0,162,229,.22), transparent 60%), linear-gradient(165deg, #12285a, #0a1634); }
+.feat__front::before { content: ""; position: absolute; left: 50%; top: 40%; width: 210px; height: 210px; margin: -105px 0 0 -105px; border-radius: 50%; background: repeating-radial-gradient(circle, transparent 0 26px, rgba(127, 212, 247, .09) 26px 27px); pointer-events: none; }
+.feat__back { transform: rotateY(180deg); background: linear-gradient(165deg, #0d4f86, #0a1f4a 70%); border-color: rgba(0,162,229,.45); }
+.feat__tag { align-self: flex-start; position: relative; font: 700 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2); padding: 5px 9px; border-radius: 6px; background: rgba(0,162,229,.12); }
+.feat__icon { position: relative; width: 66px; height: 66px; margin: auto auto 0; fill: none; stroke: var(--accent-2); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 14px rgba(0,162,229,.55)); transition: transform .6s var(--ease); }
+.feat:hover .feat__icon { transform: scale(1.08); }
+.feat__front h3 { position: relative; margin: auto 0 14px; text-align: center; font: 800 20px/1.2 var(--display); letter-spacing: -.02em; }
+.feat__back h3 { font: 800 19px/1.2 var(--display); letter-spacing: -.02em; margin: 16px 0 10px; }
+.feat__back p { color: rgba(246, 248, 252, .86); font-size: 15px; line-height: 1.55; }
+.feat__hint { display: inline-flex; align-items: center; gap: 7px; align-self: center; margin-top: auto; font: 600 12px var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+.feat__front .feat__hint { margin-top: 0; }
+.feat__hint svg { width: 14px; height: 14px; }
 
 /* ---------- A note from the flight deck ---------- */
 .deck { position: relative; }
@@ -311,6 +323,7 @@ main { overflow-x: clip; } /* slide-ins and the 3D pass tilt never widen the pag
     body { font-size: 16px; }
   .grid { grid-template-columns: 1fr; }
   .feats, .meaning { grid-template-columns: 1fr; }
+  .feat { height: 270px; }
   .meaning > div + div { padding-left: 0; border-left: 0; }
   .radar__log { gap: 24px; }
   .pass { grid-template-columns: 1fr; -webkit-mask: none; mask: none; }

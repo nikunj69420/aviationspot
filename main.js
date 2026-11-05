@@ -759,6 +759,19 @@ document.querySelectorAll('[data-count]').forEach((el) => {
 });
 gsap.from('.stat', { y: 40, opacity: 0, duration: 1.1, stagger: 0.08, ease: 'expo.out', scrollTrigger: { trigger: '.stats', start: 'top 85%' } });
 gsap.from('.feat', { y: 70, opacity: 0, duration: 1.2, stagger: 0.06, ease: 'expo.out', scrollTrigger: { trigger: '.feats', start: 'top 85%' } });
+// achievement cards flip to their brief on click, tap, Enter or Space
+document.querySelectorAll('.feat').forEach((card) => {
+  const title = card.querySelector('h3').textContent;
+  const flip = () => {
+    const on = card.classList.toggle('is-flipped');
+    card.setAttribute('aria-pressed', String(on));
+    card.setAttribute('aria-label', `${title}: ${on ? 'show title' : 'show details'}`);
+  };
+  card.addEventListener('click', flip);
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
+  });
+});
 
 // Flight deck note: the founder's line brightens word by word as it scrolls past
 const quote = document.getElementById('deckQuote');
