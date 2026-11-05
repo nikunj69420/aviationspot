@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
-import { createHeadsetStage } from './headset.js?v=3';
+import { createHeadsetStage } from './headset.js?v=4';
 import { createGlobe } from './globe.js?v=2';
 
 const { gsap, ScrollTrigger, Lenis } = window;
@@ -184,6 +184,7 @@ loader.load('assests/a320/a320.glb?v=2', (gltf) => {
   wrap.add(model);
   normalise(wrap, 4.6);
   plane.add(wrap);
+  cockpitExterior.add(wrap.clone()); // the flight deck's exterior for the fly-out
   miniRoll.add(wrap.clone()); // the flight log's top-down aircraft shares the geometry and livery
   plane.visible = true;
 });
@@ -270,29 +271,36 @@ sky.scene.add(jet);
 // main panel ≈ z -10, throttle quadrant ≈ (0, -2, -9.5), overhead panel from z -9 back over the seats
 const cockpit = { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(46, 1, 0.05, 400) };
 cockpit.scene.environment = envMap;
-cockpit.scene.add(new THREE.HemisphereLight(0xdfe9ff, 0x1b2140, 1.1));
-const cpKey = new THREE.DirectionalLight(0xffd2a0, 2.4); // low dawn sun ahead, through the windshield
-cpKey.position.set(-6, 12, -40);
+// minimal light, like a flight deck before dawn: a dim sky glow, the low sun through the windshield,
+// and the panel's own lit displays and annunciators (the model's emissive maps) doing the rest
+cockpit.scene.add(new THREE.HemisphereLight(0x9fb4e0, 0x0c1022, 0.35));
+const cpKey = new THREE.DirectionalLight(0xffc48e, 1.3);
+cpKey.position.set(-6, 10, -40);
 cockpit.scene.add(cpKey);
-const cpFill = new THREE.DirectionalLight(0x9cc4ff, 1.0);
+const cpFill = new THREE.DirectionalLight(0x8fb2ff, 0.25);
 cpFill.position.set(8, 6, 10);
 cockpit.scene.add(cpFill);
-const cabinLight = new THREE.PointLight(0xfff1dc, 30, 16); // flight deck dome light so the panels read
-cabinLight.position.set(-0.5, 2.6, -5.5);
-cockpit.scene.add(cabinLight);
 const flightDeck = new THREE.Group();
 cockpit.scene.add(flightDeck);
+// the same AviationSpot360 A320 as the sky scene, scaled to line up round the flight deck, so the
+// camera can fly out through the windshield and look back at the nose (its own faces are culled from inside)
+const cockpitExterior = new THREE.Group();
+cockpitExterior.rotation.y = Math.PI / 2; // the shared model's nose points +X; the flight deck faces -Z
+cockpitExterior.position.set(0, 0.6, 37);
+cockpitExterior.scale.setScalar(114 / 4.6); // ≈ 37.6 m airliner in the flight deck's ≈ 0.33 m units
+cockpitExterior.visible = false;
+cockpit.scene.add(cockpitExterior);
+const cpHemi = cockpit.scene.children.find((o) => o.isHemisphereLight);
 // starts downloading straight away, but the loading screen doesn't wait for it
-lazyLoader.load('assests/a320_cockpit/a320_cockpit.glb?v=1', (gltf) => {
+lazyLoader.load('assests/a320_cockpit/a320_cockpit.glb?v=3', (gltf) => {
   const m = gltf.scene;
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
   m.traverse((o) => {
     if (!o.isMesh) return;
     const mat = o.material;
-    mat.envMapIntensity = 0.6;
-    if (!mat.map) return;
-    mat.map.anisotropy = 8;
-    // the panel artwork (displays, annunciators) glows a little, like a lit flight deck at dawn
-    if (!mat.emissiveMap) { mat.emissive = new THREE.Color(0xffffff); mat.emissiveMap = mat.map; mat.emissiveIntensity = 0.28; }
+    mat.envMapIntensity = 0.25;
+    for (const tex of [mat.map, mat.emissiveMap]) if (tex) tex.anisotropy = maxAniso; // crisp at grazing angles
+    if (mat.emissiveMap) mat.emissiveIntensity = 1.15; // displays and annunciators
   });
   flightDeck.add(m);
 });
@@ -304,8 +312,9 @@ const CP_PATH = [
   [0.4, [-2.6, 1.2, -4.8], [-1.2, -0.4, -10.5]],   // back into the seat: the whole panel
   [0.55, [-2.6, 1.2, -4.9], [0.2, -1.6, -9.5]],    // across to the thrust levers
   [0.7, [-2.4, 1.3, -5.0], [-0.5, 3.5, -6.5]],     // up to the overhead panel
-  [0.84, [-2.4, 1.3, -5.2], [-1.5, 2.2, -20]],     // out through the windshield
-  [1.0, [-2.0, 2.6, -11.0], [-1.6, 2.8, -40]],     // and up to the glass, handing over to the sky
+  [0.8, [-2.4, 1.3, -5.2], [-1.5, 2.2, -20]],      // look out through the windshield
+  [0.88, [-1.8, 2.8, -14], [-1.5, 2.8, -40]],      // and fly out through the glass...
+  [1.0, [-36, 9, -66], [-5, 0, -14]],              // ...swinging round to look back at the AviationSpot360 nose
 ];
 const cpEye = new THREE.Vector3(), cpTarget = new THREE.Vector3();
 function cockpitPose(p) {
@@ -500,6 +509,12 @@ function updateSky(dt, time, target, ease) {
 function updateCockpit() {
   const p = stickyProgress(cockpitSec);
   cockpitPose(p);
+  // outside the glass: show the airliner's skin and bring the daylight up
+  const out = range(p, 0.84, 0.94);
+  cockpitExterior.visible = p > 0.8;
+  flightDeck.visible = p < 0.87; // its shell is bigger than the airliner's nose, so it goes once we're through the glass
+  cpHemi.intensity = lerp(0.35, 1.2, out);
+  cpKey.intensity = lerp(1.3, 2.8, out);
   const cam = cockpit.camera;
   // pointer parallax: a small head turn from the seat
   cam.position.copy(cpEye).add(tmp.set(pointer.x * 0.3, -pointer.y * 0.15, 0));

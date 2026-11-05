@@ -30,7 +30,7 @@ export function createHeadsetStage({ envMap, loader }) {
       new THREE.RingGeometry(0.985, 1, 128),
       new THREE.MeshBasicMaterial({ color: 0x4cc3f5, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
     );
-    m.position.z = -1.5;
+    m.position.z = -0.2;
     rig.add(m);
     rings.push(m);
   }
@@ -50,7 +50,11 @@ export function createHeadsetStage({ envMap, loader }) {
       });
       const wrap = new THREE.Group();
       wrap.add(m);
-      const box = new THREE.Box3().setFromObject(wrap);
+      // size and centre on the body (cups and headband), not the cable and boom mic that hang off it
+      const box = new THREE.Box3();
+      wrap.updateMatrixWorld(true);
+      wrap.traverse((o) => { if (o.isMesh && !/cable/i.test(o.material.name)) box.expandByObject(o); });
+      if (box.isEmpty()) box.setFromObject(wrap);
       const s = 4.9 / box.getSize(new THREE.Vector3()).toArray().reduce((a, b) => Math.max(a, b));
       wrap.scale.setScalar(s);
       wrap.position.copy(box.getCenter(new THREE.Vector3()).multiplyScalar(-s));
@@ -76,6 +80,7 @@ export function createHeadsetStage({ envMap, loader }) {
 
     for (let i = 0; i < rings.length; i++) {
       const ph = reduceMotion ? i / rings.length : (time * (0.32 + talk * 0.3) + i / rings.length) % 1;
+      rings[i].lookAt(camera.position); // face the camera so the rings stay round and centred on the headset
       rings[i].scale.setScalar(2.4 + ph * 5.5);
       rings[i].material.opacity = (1 - ph) * (1 - ph) * (0.18 + talk * 0.4) * e;
     }

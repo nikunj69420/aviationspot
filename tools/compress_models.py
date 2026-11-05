@@ -16,7 +16,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 GT = ["npx", "-y", "@gltf-transform/cli@4.2.1"]
@@ -28,7 +28,10 @@ MODELS = [
      ["--simplify-ratio", "0.2", "--simplify-error", "0.002"]),
     ("assests/a320/scene_as360.gltf", "assests/a320/a320.glb", {"*": 2048}, ["--simplify", "false"]),
     # A320 flight deck (section 01): merged into few meshes, light simplification keeps switches crisp
-    ("assests/a320_cockpit/scene.gltf", "assests/a320_cockpit/a320_cockpit.glb", {"Panel": 2048, "*": 1024},
+    # its panel textures are small (512-1024 px), so they're upscaled 2x with a light sharpen and kept at high quality
+    # (scene_as360.gltf: the registration placard repainted by tools/cockpit_livery.py)
+    ("assests/a320_cockpit/scene_as360.gltf", "assests/a320_cockpit/a320_cockpit.glb",
+     {"*": 2048, "__upscale": {"Panel": 2, "Lights": 2, "Throttle": 2}, "__quality": 94},
      ["--simplify-ratio", "0.6", "--simplify-error", "0.0004"]),
     # the pilot headset, seen close up: the painted ear cups keep 2048 px, the mesh loses half its triangles
     ("assests/headphones/scene_as360.gltf", "assests/headphones/headphones.glb", {"normal": 512, "metallicRoughness": 512, "as360_metal": 2048, "*": 1024},
@@ -65,14 +68,18 @@ def webp_pass(src: Path, work: Path, sizes: dict, drop: set) -> Path:
     normal_imgs = {g["textures"][m["normalTexture"]["index"]]["source"] for m in g.get("materials", []) if "normalTexture" in m}
     for i, img in enumerate(g.get("images", [])):
         im = Image.open(src.parent / img["uri"].split("?")[0])
-        limit = next((v for k, v in sizes.items() if k != "*" and k in img["uri"]), sizes["*"])
+        up = next((f for k, f in sizes.get("__upscale", {}).items() if k in img["uri"]), 1)
+        if up > 1:  # small source art: upscale, then sharpen the edges back
+            im = im.convert("RGB").resize((im.width * up, im.height * up), Image.LANCZOS)
+            im = im.filter(ImageFilter.UnsharpMask(radius=1.6, percent=70, threshold=2))
+        limit = next((v for k, v in sizes.items() if not k.startswith("__") and k != "*" and k in img["uri"]), sizes["*"])
         if max(im.size) > limit:
             im = im.resize((limit * im.width // max(im.size), limit * im.height // max(im.size)), Image.LANCZOS)
         has_alpha = im.mode in ("RGBA", "LA", "P") and im.convert("RGBA").getextrema()[3][0] < 250
         im = im.convert("RGBA" if has_alpha else "RGB")
         name = f"tex_{i}.webp"
         # normal maps need more precision than colour maps
-        im.save(work / name, "WEBP", quality=92 if i in normal_imgs else 82, method=6)
+        im.save(work / name, "WEBP", quality=92 if i in normal_imgs else sizes.get("__quality", 82), method=6)
         g["images"][i] = {"uri": name, "mimeType": "image/webp"}
     for t in g.get("textures", []):
         t.setdefault("extensions", {})["EXT_texture_webp"] = {"source": t.pop("source")}

@@ -19,6 +19,7 @@ Then open http://localhost:5173. (`tools/serve.py` is a plain static server that
 - Theme: navy `#0b163a` / `#111c44` and sky cyan `#00a2e5`, taken from the logo (`--brand-navy`, `--navy-2`, `--accent` in `style.css`)
 - `globe.js`: the exam section's globe: dotted land, VABB → FAOR and VABB → KJFK great-circle routes, flown by a small aircraft; the authority tabs spin it to each route. Land dots are baked from Natural Earth (via world-atlas) by `tools/build_globe_dots.mjs` into `assests/globe/land.json`
 - `headset.js`: the transmission scene that opens the brand story (05): the AviationSpot360 pilot headset with radio rings; the radio panel and the tower call are DOM, driven from `main.js`
+- `tools/cockpit_livery.py`: repaints the A320 flight deck's registration placard as "AS360 | VT-AS360" (then rebuild `assests/a320_cockpit/a320_cockpit.glb`; small panel textures are upscaled 2x and sharpened by `tools/compress_models.py`)
 - `tools/headset_livery.py`: paints the headset in brand navy and cyan with the logo emblem on each ear cup, placed from the mesh's own UV mapping (then rebuild `assests/headphones/headphones.glb` with `tools/compress_models.py`)
 - Story, impact and founder sections (05–08) carry the brand story and achievements: the flight log, stats, achievements and the note from the flight deck
 - `assests/*/*.glb`: the 3D models the site loads (meshopt-compressed, WebP textures): `a320`, `a320_cockpit`, `jet_engine`, `headphones`, `g650`
