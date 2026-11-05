@@ -278,6 +278,7 @@ main { overflow-x: clip; } /* slide-ins and the 3D pass tilt never widen the pag
 .log__item.is-on .log__wpt svg { fill: var(--accent); stroke: #c9eefc; transform: rotate(45deg) scale(1.15); filter: drop-shadow(0 0 8px rgba(0,162,229,.85)); }
 .log__item.is-on .log__wpt circle { fill: #04102e; stroke: none; }
 .log__id { font: 700 11px var(--mono); letter-spacing: .08em; color: var(--accent-2); margin-right: 10px; }
+.mini-plane { position: fixed; left: 0; top: 0; z-index: 3; width: 150px; height: 150px; pointer-events: none; visibility: hidden; will-change: transform; }
 .log__plane { position: absolute; left: 12px; top: 10px; width: 0; height: 0; list-style: none; }
 .log__body small { font: 600 11px var(--serif); letter-spacing: .28em; text-transform: uppercase; color: var(--accent); }
 .log__body h3 { font: 800 clamp(26px, 2.7vw, 38px)/1.08 var(--display); letter-spacing: -.03em; margin: 8px 0 12px; font-variation-settings: "wdth" 92; }

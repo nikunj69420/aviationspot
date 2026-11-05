@@ -36,6 +36,8 @@ export function createHeadsetStage({ envMap, loader }) {
   }
 
   let loaded = false;
+  let appear = 0; // 0 → 1 once the model has arrived, so it never pops in
+  let model = null;
   function load() {
     if (loaded) return;
     loaded = true;
@@ -53,17 +55,22 @@ export function createHeadsetStage({ envMap, loader }) {
       wrap.scale.setScalar(s);
       wrap.position.copy(box.getCenter(new THREE.Vector3()).multiplyScalar(-s));
       spin.add(wrap);
+      model = wrap;
     });
   }
 
-  function update({ p, time, pointer, reduceMotion, presence = 1, talk = 0 }) {
-    const e = 1 - Math.pow(1 - presence, 3);
+  function update({ p, dt, time, pointer, reduceMotion, presence = 1, talk = 0 }) {
+    if (model) appear = Math.min(1, appear + dt / 1.2);
+    const show = presence * appear;
+    const e = show * show * (3 - 2 * show); // smoothstep: eases in and out, no snap
     const wide = camera.aspect >= 1;
     // arrive: rise in from below with a half turn; leave: the same in reverse
-    rig.position.set(wide ? 4.4 : 0, (wide ? 1.5 : -2.2) - 9 * (1 - e), 0);
-    rig.rotation.z = (1 - e) * 0.5;
+    rig.position.set(wide ? 4.4 : 0, (wide ? 1.5 : -2.2) - 5 * (1 - e), 0);
+    rig.rotation.z = (1 - e) * 0.25;
+    rig.scale.setScalar(0.75 + 0.25 * e);
     const drift = reduceMotion ? 0 : Math.sin(time * 0.6) * 0.08;
-    spin.rotation.y = -0.75 + p * 1.5 + (1 - e) * 2.2 + drift + pointer.x * 0.35;
+    // turned so the boom mic comes toward the viewer; the scroll only rocks it gently either side
+    spin.rotation.y = Math.PI - 0.75 + (p - 0.5) * 0.8 + (1 - e) * 0.9 + drift + pointer.x * 0.3;
     spin.rotation.x = 0.12 + (reduceMotion ? 0 : Math.sin(time * 0.8) * 0.04) + pointer.y * 0.15;
     spin.position.y = reduceMotion ? 0 : Math.sin(time * 1.1) * 0.12;
 

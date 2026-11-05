@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
-import { createHeadsetStage } from './headset.js?v=2';
+import { createHeadsetStage } from './headset.js?v=3';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -581,7 +581,8 @@ const khz = (v) => (Math.round(v * 40) / 40).toFixed(3); // 25 kHz channel steps
 let talkLevel = 0;
 function updateHeadset(dt, time, k) {
   const p = stickyProgress(txSec);
-  const presence = Math.min(range(k, HEADSET_K - 0.5, HEADSET_K - 0.3), 1 - range(k, HEADSET_K + 0.02, HEADSET_K + 0.3));
+  // arrives over most of the hand-over from the engine scene, leaves as soon as the flight log scrolls in
+  const presence = Math.min(range(k, HEADSET_K - 0.5, HEADSET_K - 0.02), 1 - range(k, HEADSET_K + 0.02, HEADSET_K + 0.32));
   const tune = range(p, 0.03, 0.14);
   freqActive.textContent = khz(lerp(121.9, 118.1, tune));
   freqStby.textContent = khz(lerp(118.1, 121.9, tune));
@@ -612,9 +613,20 @@ function updateHeadset(dt, time, k) {
   }
 }
 
-/* ---------- Flight log aircraft: a small A320 seen from above that flies in and follows the rail ---------- */
+/* ---------- Flight log aircraft: a small A320 seen from above that flies in and follows the rail ----------
+   It has its own little canvas above the page, so it flies over the waypoints rather than under them. */
+const MINI = 150; // css px box the aircraft is drawn in
+const miniCanvas = document.createElement('canvas');
+miniCanvas.className = 'mini-plane';
+miniCanvas.setAttribute('aria-hidden', 'true');
+document.body.appendChild(miniCanvas);
+const miniRenderer = new THREE.WebGLRenderer({ canvas: miniCanvas, antialias: true, alpha: true });
+miniRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+miniRenderer.setSize(MINI, MINI);
+miniRenderer.outputColorSpace = THREE.SRGBColorSpace;
+miniRenderer.toneMapping = THREE.ACESFilmicToneMapping;
 const mini = { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(28, 1, 0.1, 60) };
-mini.scene.environment = envMap;
+mini.scene.environment = new THREE.PMREMGenerator(miniRenderer).fromScene(new RoomEnvironment(), 0.04).texture;
 mini.scene.add(new THREE.HemisphereLight(0xffffff, 0x223355, 1.1));
 const miniSun = new THREE.DirectionalLight(0xffffff, 2.2);
 miniSun.position.set(-3, 8, -2);
@@ -628,37 +640,25 @@ miniYaw.add(miniRoll);
 mini.scene.add(miniYaw);
 const logEl = document.getElementById('log');
 const logRail = document.querySelector('.log__rail');
-const MINI = 150; // css px box the aircraft is drawn in
-let miniHeading = 0;
-function drawMiniPlane(dt, time) {
-  if (!miniRoll.children.length || !railST || !entryST) return;
+let miniShown = false;
+function drawMiniPlane() {
+  const hide = () => { if (miniShown) { miniCanvas.style.visibility = 'hidden'; miniShown = false; } };
+  if (!miniRoll.children.length || !railST || !entryST) return hide();
   const r = logEl.getBoundingClientRect();
-  if (r.bottom < -MINI || r.top > innerHeight + MINI) return;
+  if (r.bottom < -MINI || r.top > innerHeight + MINI) return hide();
   const en = smooth(entryST.progress);                      // 0 = off the left edge, 1 = on the rail
-  const ax = r.left + 12;
+  const ax = r.left + 12;                                    // the rail's centre line
   const ay = r.top + 10 + railST.progress * logRail.offsetHeight;
-  const vel = lenis ? lenis.velocity : 0;
-  const weave = reduceMotion ? 0 : Math.sin(time * 1.3);
-  const x = lerp(-MINI, ax, en) + weave * 3 * en;
-  const y = ay - (1 - en) * 60;
-  // heading: flying right while it comes in, turning down the rail, and back up it when scrolling up
-  const turn = range(en, 0.55, 1);
-  const along = vel < -0.4 ? Math.PI / 2 : -Math.PI / 2;
-  const target = lerp(-0.25, along, turn);
-  miniHeading = lerp(miniHeading, target, 1 - Math.exp(-dt * 5));
-  miniYaw.rotation.y = miniHeading + weave * 0.05 * en;
-  miniRoll.rotation.x = Math.sin(turn * Math.PI) * 0.55 + gsap.utils.clamp(-0.45, 0.45, vel * 0.03) + weave * 0.06;
-  const left = Math.round(x - MINI / 2), bottom = Math.round(innerHeight - y - MINI / 2);
-  if (left > innerWidth || left + MINI < 0 || bottom > innerHeight || bottom + MINI < 0) return;
-  renderer.autoClear = false;
-  renderer.setScissorTest(true);
-  renderer.setScissor(left, bottom, MINI, MINI);
-  renderer.setViewport(left, bottom, MINI, MINI);
-  renderer.clearDepth();
-  renderer.render(mini.scene, mini.camera);
-  renderer.setScissorTest(false);
-  renderer.setViewport(0, 0, innerWidth, innerHeight);
-  renderer.autoClear = true;
+  // comes in level from the left, then banks into one smooth turn onto the rail and flies straight down it
+  const turn = range(en, 0.5, 1);
+  const x = lerp(-MINI, ax, smooth(clamp01(en / 0.85)));
+  const y = ay - (1 - turn) * 70;
+  miniYaw.rotation.y = lerp(0, -Math.PI / 2, turn);
+  miniRoll.rotation.x = Math.sin(turn * Math.PI) * 0.5;
+  if (x + MINI / 2 < 0 || x - MINI / 2 > innerWidth || y + MINI / 2 < 0 || y - MINI / 2 > innerHeight) return hide();
+  miniCanvas.style.transform = `translate3d(${(x - MINI / 2).toFixed(1)}px, ${(y - MINI / 2).toFixed(1)}px, 0)`;
+  if (!miniShown) { miniCanvas.style.visibility = 'visible'; miniShown = true; }
+  miniRenderer.render(mini.scene, mini.camera);
 }
 let railST = null, entryST = null; // set up with the flight log below
 
@@ -690,7 +690,7 @@ function frame() {
 
   const st = stages[stage];
   renderer.render(st.scene, st.camera);
-  drawMiniPlane(dt, time);
+  drawMiniPlane();
 }
 
 /* ---------- Loader → intro ---------- */
