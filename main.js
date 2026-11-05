@@ -828,15 +828,13 @@ gsap.from(panelEl, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollT
 
 // Flight log: the rail fills as you read, and the leg in the middle of the screen lights up
 const logItems = [...document.querySelectorAll('.log__item')];
-const logNo = document.getElementById('logNo');
 railST = gsap.to('#logRail', { scaleY: 1, ease: 'none', scrollTrigger: { trigger: '#log', start: 'top 60%', end: 'bottom 60%', scrub: true } }).scrollTrigger;
 entryST = ScrollTrigger.create({ trigger: '#log', start: 'top bottom', end: 'top 60%' }); // the aircraft flies in from the side
-logItems.forEach((item, i) => {
+logItems.forEach((item) => {
   ScrollTrigger.create({
     trigger: item, start: 'top 62%', end: 'bottom 62%',
     onToggle: (self) => {
       item.classList.toggle('is-on', self.isActive);
-      if (self.isActive) logNo.textContent = String(i + 1).padStart(2, '0');
     },
   });
   gsap.from(item.querySelector('.log__body'), { x: 40, duration: 1.1, ease: 'expo.out', scrollTrigger: { trigger: item, start: 'top 85%' } });
