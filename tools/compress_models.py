@@ -20,27 +20,19 @@ from PIL import Image, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 GT = ["npx", "-y", "@gltf-transform/cli@4.2.1"]
-# source glTF, output glb, max texture size (keeps the cockpit panel/instruments sharp), extra flags
+# source glTF, output glb, max texture size per texture-name match, extra flags
 MODELS = [
     ("assests/jet_engine/scene.gltf", "assests/jet_engine/jet_engine.glb", {"*": 1024}, ["--simplify", "false"]),
     # only ever seen small and far away, so it can lose most of its triangles
     ("assests/src/gulfstream_g650er/scene.gltf", "assests/g650/g650.glb", {"*": 1024},
      ["--simplify-ratio", "0.2", "--simplify-error", "0.002"]),
     ("assests/a320/scene_as360.gltf", "assests/a320/a320.glb", {"*": 2048}, ["--simplify", "false"]),
-    # A320 flight deck (section 01): merged into few meshes, light simplification keeps switches crisp
-    # its panel textures are small (512-1024 px), so they're upscaled 2x with a light sharpen and kept at high quality
-    # (scene_as360.gltf: the registration placard repainted by tools/cockpit_livery.py)
-    ("assests/a320_cockpit/scene_as360.gltf", "assests/a320_cockpit/a320_cockpit.glb",
-     {"*": 2048, "__upscale": {"Panel": 2, "Lights": 2, "Throttle": 2}, "__quality": 94},
-     ["--simplify-ratio", "0.6", "--simplify-error", "0.0004"]),
     # the pilot headset, seen close up: the painted ear cups keep 2048 px, the mesh loses half its triangles
     ("assests/headphones/scene_as360.gltf", "assests/headphones/headphones.glb", {"normal": 512, "metallicRoughness": 512, "as360_metal": 2048, "*": 1024},
      ["--simplify-ratio", "0.5", "--simplify-error", "0.0005"]),
 ]
 # materials to strip before compressing, per output
 DROP: dict = {
-    # two huge backdrop boxes wrapped round the A320 flight deck
-    "assests/a320_cockpit/a320_cockpit.glb": {"surfaceShader4", "lambert37"},
 }
 
 

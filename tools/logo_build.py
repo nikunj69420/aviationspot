@@ -107,7 +107,8 @@ def with_viewbox(svg: str, vb: str) -> str:
 
 
 src = SRC.read_text(encoding="utf-8")
-base = add_radar_sweep(outline_text(src))
+base = outline_text(src)  # the logo stays still: the radar sweep in the "o" is the static original
+# (add_radar_sweep() animates it, if that is ever wanted again)
 OUT.mkdir(exist_ok=True)
 (OUT / "logo.svg").write_text(base, encoding="utf-8")
 light = white(base)

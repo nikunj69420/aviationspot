@@ -39,8 +39,7 @@ document.querySelectorAll('[data-to]').forEach((a) =>
 // cy = cloud deck height
 const KEYS = [
   { stage: 'sky', pm: [0.3, -4.3, 0], p: [2.7, -0.5, 2.2], r: [-0.12, -2.3, 0.07], s: 1.25, cy: -22, alt: 0, sky: ['#0b1a3a', '#3b4f8a', '#f08a5d'] },
-  { stage: 'cockpit', p: [-9, 4, -8], r: [0.2, -2.6, 0.3], s: 1, cy: 6, alt: 400, sky: ['#14214a', '#5b5a8f', '#f3a274'] },
-  // pillars: the A320 was just seen from the flight deck fly-out, so it stays up out of frame here
+  // pillars: the A320 climbs away out of frame after the hero
   { stage: 'sky', pm: [0, 26, -30], p: [0, 22, -30], r: [0.25, 1.1, 0.12], s: 1, cy: -3.2, alt: 5000, sky: ['#2a63b4', '#6aa3dc', '#d6e8f6'] },
   { stage: 'engine', p: [3.8, 0.4, -2], r: [-0.3, -0.5, 0.06], s: 1, cy: -4, alt: 8000, sky: ['#040a17', '#0a1830', '#13284d'] },
   // exams: the A320 climbs out of frame so the globe has the right side to itself
@@ -188,7 +187,6 @@ loader.load('assests/a320/a320.glb?v=2', (gltf) => {
   wrap.add(model);
   normalise(wrap, 4.6);
   plane.add(wrap);
-  cockpitExterior.add(wrap.clone()); // the flight deck's exterior for the fly-out
   miniRoll.add(wrap.clone()); // the flight log's top-down aircraft shares the geometry and livery
   plane.visible = true;
 });
@@ -269,66 +267,7 @@ jet.visible = false;
 sky.scene.add(jet);
 
 /* =========================================================
-   Stage 2: COCKPIT — the A320 flight deck, from the captain's seat
-   ========================================================= */
-// kept in the model's own units (≈ 0.3 m): nose points -Z, captain on the left (-X),
-// main panel ≈ z -10, throttle quadrant ≈ (0, -2, -9.5), overhead panel from z -9 back over the seats
-const cockpit = { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(46, 1, 0.05, 400) };
-cockpit.scene.environment = envMap;
-// minimal light, like a flight deck before dawn: a dim sky glow, the low sun through the windshield,
-// and the panel's own lit displays and annunciators (the model's emissive maps) doing the rest
-cockpit.scene.add(new THREE.HemisphereLight(0x9fb4e0, 0x0c1022, 0.35));
-const cpKey = new THREE.DirectionalLight(0xffc48e, 1.3);
-cpKey.position.set(-6, 10, -40);
-cockpit.scene.add(cpKey);
-const cpFill = new THREE.DirectionalLight(0x8fb2ff, 0.25);
-cpFill.position.set(8, 6, 10);
-cockpit.scene.add(cpFill);
-const flightDeck = new THREE.Group();
-cockpit.scene.add(flightDeck);
-// the same AviationSpot360 A320 as the sky scene, scaled to line up round the flight deck, so the
-// camera can fly out through the windshield and look back at the nose (its own faces are culled from inside)
-const cockpitExterior = new THREE.Group();
-cockpitExterior.rotation.y = Math.PI / 2; // the shared model's nose points +X; the flight deck faces -Z
-cockpitExterior.position.set(0, 0.6, 37);
-cockpitExterior.scale.setScalar(114 / 4.6); // ≈ 37.6 m airliner in the flight deck's ≈ 0.33 m units
-cockpitExterior.visible = false;
-cockpit.scene.add(cockpitExterior);
-const cpHemi = cockpit.scene.children.find((o) => o.isHemisphereLight);
-// starts downloading straight away, but the loading screen doesn't wait for it
-lazyLoader.load('assests/a320_cockpit/a320_cockpit.glb?v=3', (gltf) => {
-  const m = gltf.scene;
-  const maxAniso = renderer.capabilities.getMaxAnisotropy();
-  m.traverse((o) => {
-    if (!o.isMesh) return;
-    const mat = o.material;
-    mat.envMapIntensity = 0.25;
-    for (const tex of [mat.map, mat.emissiveMap]) if (tex) tex.anisotropy = maxAniso; // crisp at grazing angles
-    if (mat.emissiveMap) mat.emissiveIntensity = 1.15; // displays and annunciators
-  });
-  flightDeck.add(m);
-});
-
-// camera beats from the captain's seat: [progress, eye, target]
-const CP_PATH = [
-  [0.0, [-2.4, 1.3, -5.0], [-0.6, 3.5, -6.4]],     // straight up to the overhead panel from the captain's seat
-  [0.45, [-2.3, 1.25, -5.2], [0.4, 3.6, -7.4]],    // drifting slowly across it
-  [0.62, [-2.4, 1.3, -5.2], [-1.5, 2.2, -20]],     // then look out through the windshield
-  [0.76, [-1.8, 2.8, -14], [-1.5, 2.8, -40]],      // and fly out through the glass...
-  [1.0, [-36, 9, -66], [-5, 0, -14]],              // ...swinging round to look back at the AviationSpot360 nose
-]
-const cpEye = new THREE.Vector3(), cpTarget = new THREE.Vector3();
-function cockpitPose(p) {
-  let i = 0;
-  while (i < CP_PATH.length - 2 && p > CP_PATH[i + 1][0]) i++;
-  const [p0, e0, t0] = CP_PATH[i], [p1, e1, t1] = CP_PATH[i + 1];
-  const t = smooth(clamp01((p - p0) / (p1 - p0)));
-  cpEye.fromArray(lerpArr(e0, e1, t));
-  cpTarget.fromArray(lerpArr(t0, t1, t));
-}
-
-/* =========================================================
-   Stage 3: ENGINE — airliner nacelle that opens into a cutaway
+   Stage 2: ENGINE — airliner nacelle that opens into a cutaway
    ========================================================= */
 // Source model: axis along X, intake at -X, exhaust at +X; the +Z side is cut away to show the core.
 const engine = { scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(35, 1, 0.1, 100) };
@@ -366,10 +305,10 @@ const flow = new THREE.Points(flowGeo, new THREE.PointsMaterial({
 }));
 engine.scene.add(flow);
 
-/* Stage 4: HEADSET — the AviationSpot360 pilot headset, where the story begins (see headset.js) */
+/* Stage 3: HEADSET — the AviationSpot360 pilot headset, where the story begins (see headset.js) */
 const headset = createHeadsetStage({ envMap, loader: lazyLoader });
 
-const stages = { sky, cockpit, engine, headset };
+const stages = { sky, engine, headset };
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
@@ -419,9 +358,7 @@ const skyEl = document.getElementById('sky');
 const faderEl = document.getElementById('fader');
 const altValue = document.getElementById('altValue');
 const altFill = document.getElementById('altFill');
-const cockpitSec = document.getElementById('cockpit');
 const engineSec = document.getElementById('engine');
-const lines = [...document.querySelectorAll('.cockpit .line')];
 const labels = [...document.querySelectorAll('#engineLabels span')];
 const cur = { ...sample(0), p: [14, 3, -30], r: [0.6, -2.6, 0.2] }; // starts far away: the A320 flies in
 const clock = new THREE.Clock();
@@ -469,7 +406,7 @@ function updateSky(dt, time, target, ease) {
 
   // contrails get thicker the higher we fly
   const k = target.i + target.t;
-  const trailVis = plane.visible ? Math.max(range(k, 1.6, 2.4) * (1 - range(k, 10.4, 11)), departure.t > 0 ? 1 : 0) : 0;
+  const trailVis = plane.visible ? Math.max(range(k, 0.6, 1.4) * (1 - range(k, 9.4, 10)), departure.t > 0 ? 1 : 0) : 0;
   fwd.set(1, 0, 0).applyQuaternion(plane.quaternion);
   for (let e = 0; e < 2; e++) {
     const idx = e * TRAIL + trailHead;
@@ -493,42 +430,18 @@ function updateSky(dt, time, target, ease) {
   trailGeo.attributes.alpha.needsUpdate = true;
   trailGeo.attributes.size.needsUpdate = true;
 
-  stars.material.opacity = range(k, 9.4, 10.2) * 0.85;
+  stars.material.opacity = range(k, 8.4, 9.2) * 0.85;
   flareLight.intensity = 1;
-  flare.visible = k < 0.9 || k > 9.5;
+  flare.visible = k < 0.9 || k > 8.5;
 
   // G650 crosses right → left as the flight log hands over to the impact section
-  const jt = clamp01((k - 6) / 1);
+  const jt = clamp01((k - 5) / 1);
   jet.visible = jet.children.length > 0 && jt > 0 && jt < 1;
   if (jet.visible) {
     jet.position.set(lerp(13, -13, jt), lerp(-3.4, -1.6, jt) + Math.sin(time) * 0.05, -6);
     jet.rotation.set(0.25 * Math.sin(jt * Math.PI), 0.25, 0.05, 'YZX');
   }
   sky.scene.fog.color.copy(target.sky[1]);
-}
-
-function updateCockpit() {
-  const p = stickyProgress(cockpitSec);
-  cockpitPose(p);
-  // outside the glass: show the airliner's skin and bring the daylight up
-  const out = range(p, 0.72, 0.84);
-  cockpitExterior.visible = p > 0.66;
-  flightDeck.visible = p < 0.75; // its shell is bigger than the airliner's nose, so it goes once we're through the glass
-  cpHemi.intensity = lerp(0.35, 1.2, out);
-  cpKey.intensity = lerp(1.3, 2.8, out);
-  const cam = cockpit.camera;
-  // pointer parallax: a small head turn from the seat
-  cam.position.copy(cpEye).add(tmp.set(pointer.x * 0.3, -pointer.y * 0.15, 0));
-  cam.lookAt(cpTarget.x + pointer.x * 0.8, cpTarget.y - pointer.y * 0.5, cpTarget.z);
-  // portrait screens: widen the lens so the panel still fits from the seat
-  const fov = cam.aspect < 1 ? 68 : 46;
-  if (cam.fov !== fov) { cam.fov = fov; cam.updateProjectionMatrix(); }
-  // one line over the overhead panel, from the moment we're in the seat until we look out of the windshield
-  lines.forEach((l) => {
-    const v = range(p, 0, 0.05) * (1 - range(p, 0.56, 0.62));
-    l.style.opacity = v;
-    l.style.transform = `translateY(${(1 - v) * 30}px)`;
-  });
 }
 
 function updateEngine(dt) {
@@ -687,7 +600,6 @@ function frame() {
   altFill.style.height = `${(cur.alt / 35000) * 100}%`;
 
   updateSky(dt, time, target, ease); // always runs so the A320 keeps its place
-  if (stage === 'cockpit') updateCockpit();
   if (stage === 'headset') updateHeadset(dt, time, target.i + target.t);
   if (stage === 'engine') updateEngine(dt);
   else labels.forEach((el) => (el.style.opacity = 0));
@@ -741,7 +653,7 @@ gsap.utils.toArray('.reveal, section:not(.hero):not(.sticky-sec) .eyebrow').forE
   gsap.from(el, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%' } })
 );
 gsap.from('.card', {
-  y: 120, opacity: 0, rotateX: -35, rotateY: (i) => (i % 3 - 1) * 12, z: -200, duration: 1.4, stagger: 0.07, ease: 'expo.out',
+  y: 40, opacity: 0, duration: 1.1, stagger: 0.06, ease: 'power3.out',
   scrollTrigger: { trigger: '.grid', start: 'top 82%' },
 });
 if (matchMedia('(hover: hover)').matches) {
@@ -751,8 +663,8 @@ if (matchMedia('(hover: hover)').matches) {
     card.addEventListener('pointermove', (e) => {
       const b = card.getBoundingClientRect();
       const x = (e.clientX - b.left) / b.width, y = (e.clientY - b.top) / b.height;
-      ry((x - 0.5) * 16);
-      rx(-(y - 0.5) * 16);
+      ry((x - 0.5) * 5);
+      rx(-(y - 0.5) * 5);
       card.style.setProperty('--mx', `${x * 100}%`);
       card.style.setProperty('--my', `${y * 100}%`);
     });
@@ -764,24 +676,22 @@ if (matchMedia('(hover: hover)').matches) {
     const my = gsap.quickTo(btn, 'y', { duration: 0.5, ease: 'power3' });
     btn.addEventListener('pointermove', (e) => {
       const b = btn.getBoundingClientRect();
-      mx((e.clientX - b.left - b.width / 2) * 0.3);
-      my((e.clientY - b.top - b.height / 2) * 0.4);
+      mx((e.clientX - b.left - b.width / 2) * 0.12);
+      my((e.clientY - b.top - b.height / 2) * 0.15);
     });
     btn.addEventListener('pointerleave', () => { mx(0); my(0); });
   });
 }
 
-// Marquee: drifts on its own, speeds up and skews with scroll velocity
+// Marquee: drifts on its own and speeds up a little with scroll velocity
 const marquee = document.getElementById('marquee');
 let mqX = 0;
-const mqSkew = gsap.quickTo(marquee, 'skewX', { duration: 0.4, ease: 'power3' });
 gsap.ticker.add((_, dt) => {
   const v = lenis ? lenis.velocity : 0;
-  mqX -= (0.05 + Math.abs(v) * 0.04) * dt;
+  mqX -= (0.04 + Math.abs(v) * 0.015) * dt;
   const half = marquee.scrollWidth / 2;
   if (-mqX > half) mqX += half;
   gsap.set(marquee, { x: mqX });
-  mqSkew(gsap.utils.clamp(-12, 12, -v * 0.6));
 });
 
 // Exams: authority switcher (each authority carries its flag colours into the UI)
@@ -835,7 +745,7 @@ tabs.forEach((t) => t.addEventListener('click', () => { showExam(+t.dataset.i); 
 showExam(0, false);
 gsap.from('.auth__item, .auth__more', { y: 30, opacity: 0, duration: 1, stagger: 0.08, ease: 'expo.out', scrollTrigger: { trigger: '.auth', start: 'top 85%' } });
 gsap.from(panelEl, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: '.auth', start: 'top 85%' } });
-gsap.from('#globe', { scale: 0.6, opacity: 0, rotate: -20, duration: 1.8, ease: 'expo.out', scrollTrigger: { trigger: '.auth', start: 'top 80%' } });
+gsap.from('#globe', { scale: 0.92, opacity: 0, duration: 1.6, ease: 'power3.out', scrollTrigger: { trigger: '.auth', start: 'top 80%' } });
 
 // Flight log: the rail fills as you read, and the leg in the middle of the screen lights up
 const logItems = [...document.querySelectorAll('.log__item')];
@@ -892,7 +802,7 @@ gsap.fromTo(quote.querySelectorAll('.w'), { opacity: 0.16 }, {
   scrollTrigger: { trigger: quote, start: 'top 80%', end: 'bottom 45%', scrub: true },
 });
 gsap.from('.deck__letter, .founder__sign', { y: 30, opacity: 0, duration: 1.1, stagger: 0.1, ease: 'expo.out', scrollTrigger: { trigger: '.deck__letter', start: 'top 88%' } });
-gsap.from('.values li', { y: 20, opacity: 0, scale: 0.92, duration: 0.8, stagger: 0.06, ease: 'back.out(2)', scrollTrigger: { trigger: '.values', start: 'top 90%' } });
+gsap.from('.values li', { y: 20, opacity: 0, scale: 0.92, duration: 0.8, stagger: 0.06, ease: 'power3.out', scrollTrigger: { trigger: '.values', start: 'top 90%' } });
 
 // Founder's sign-off writes itself: a pen traces each letter in turn, and the ink fills in just behind it
 const sigLetters = [...document.querySelectorAll('.signature .sig__l')];
@@ -912,7 +822,7 @@ if (sigLetters.length && !reduceMotion) {
 }
 
 // Founder: profile card, then the journey route draws across its stops
-gsap.from('.founder__card', { y: 60, opacity: 0, rotateY: -12, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: '.founder__grid', start: 'top 80%' } });
+gsap.from('.founder__card', { y: 40, opacity: 0, duration: 1.2, ease: 'power3.out', scrollTrigger: { trigger: '.founder__grid', start: 'top 80%' } });
 gsap.from('.founder__story p', { y: 30, opacity: 0, duration: 1.1, stagger: 0.12, ease: 'expo.out', scrollTrigger: { trigger: '.founder__story', start: 'top 75%' } });
 gsap.to('.journey__line span', { scaleX: 1, ease: 'none', scrollTrigger: { trigger: '.journey', start: 'top 85%', end: 'bottom 55%', scrub: true } });
 gsap.from('.journey li:not(.journey__line)', { y: 30, opacity: 0, duration: 0.9, stagger: 0.12, ease: 'expo.out', scrollTrigger: { trigger: '.journey', start: 'top 82%' } });
