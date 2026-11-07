@@ -409,9 +409,11 @@ main { overflow-x: clip; } /* slide-ins and the 3D pass tilt never widen the pag
 
 /* ---------- Founder ---------- */
 .founder__grid { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: clamp(28px, 5vw, 72px); align-items: start; }
-.founder__card { position: relative; text-align: center; padding: 34px 26px 28px; border-radius: 22px; background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.04)); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%); box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 40px 80px -40px rgba(0,0,0,.6); }
-.founder__wings { width: 120px; color: var(--accent-2); filter: drop-shadow(0 0 10px rgba(0,162,229,.6)); }
-.founder__badge { width: 120px; height: 120px; margin: 10px auto 18px; border-radius: 50%; display: grid; place-items: center; font: 800 42px var(--display); letter-spacing: -.02em; color: #fff; background: radial-gradient(circle at 30% 25%, #2aa8ee, #0b3f7a 55%, #0b163a); box-shadow: 0 0 0 4px rgba(255,255,255,.12), 0 0 0 10px rgba(0,162,229,.18), 0 20px 40px -10px rgba(0,0,0,.6); }
+.founder__card { position: relative; text-align: center; padding: 18px 18px 26px; border-radius: 22px; background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.04)); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%); box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 40px 80px -40px rgba(0,0,0,.6); }
+.founder__wings { width: 96px; margin-bottom: 6px; color: var(--accent-2); filter: drop-shadow(0 0 10px rgba(0,162,229,.6)); }
+.founder__photo { margin: 0 0 18px; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; background: #eef0f3; box-shadow: 0 0 0 1px rgba(127,212,247,.4), 0 0 0 6px rgba(0,162,229,.12), 0 30px 50px -20px rgba(0,0,0,.6); }
+.founder__photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; transition: transform 1.2s var(--ease); }
+.founder__card:hover .founder__photo img { transform: scale(1.03); }
 .founder__card h3 { font: 800 22px/1.2 var(--display); letter-spacing: -.02em; }
 .founder__nick { font: 600 26px/1 Caveat, cursive; color: var(--accent-2); margin: 6px 0 8px; }
 .founder__role { font-size: 14px; color: var(--dim); }
